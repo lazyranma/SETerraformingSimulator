@@ -1031,10 +1031,11 @@
                 if (atm >= 1e6) return (atm / 1e6).toFixed(3) + " Matm";
                 if (atm >= 1000) return (atm / 1000).toFixed(3) + " katm";
                 if (atm >= 0.001) return atm.toFixed(3) + " atm";
-                // Below 0.001: round to first significant digit
+                // Below 0.001: round to first significant digit, max 12 decimals
                 const exp = Math.floor(Math.log10(atm));
-                const decimals = -exp;
+                const decimals = Math.min(-exp, 12);
                 const rounded = Math.round(atm * Math.pow(10, decimals)) / Math.pow(10, decimals);
+                if (rounded === 0) return "0 atm";
                 return rounded.toFixed(decimals) + " atm";
             }
             function fmtPercent(f) {
