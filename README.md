@@ -8,7 +8,6 @@ Select a planet, adjust mirrors/shades/resources. The simulator will calculate t
 
 ## Simulation phases
 
-- Starts with deposits in solid state, no atmosphere.
 - First it does 15 warm-up ticks to simulate the game's load-time warm-up cycle.
 - Then up to 150 total ticks in a batch.
 - If not settled after batch, it switches to live mode, showing 1 tick/sec visual simulation.
