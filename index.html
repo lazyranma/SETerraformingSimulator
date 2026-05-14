@@ -988,35 +988,35 @@
             //          heatCapacityRock, water, radiation, magneticField,
             //          radiusKm, mass1E24, rotationPeriod, distanceAU, oceanDepth
             // ═══════════════════════════════════════════════════════════════
-            const CSV_DATA = `id,name,objectType,gravity,albedo,internalFlux,heatCapacityRock,water,radiation,magneticFieldVisualization,radiusKm,mass1E24,rotationPeriod,distanceAU,oceanDepth
-0,SUN,Other,274,0,0,0,0,100000,100000,45383.51953125,1989000,1,1,3911
-8,PLUTO,Planet,0,0.72,0.08,50000,0,1.5,2.5,1188000,0.0138999996706843,6.375,39.482120513916,3911
-10,MERCURY,Planet,0,0.09,0.08,200000,0,30,15,2439700,0.330099999904633,58,0.387099295854568,3911
-24,VENUS,Planet,0,0.76,0.08,200000,0,0,10,6051800,4.86700010299683,121.499977111816,0.723335683345795,3911
-56,JUPITER,Planet,0,0.34,0.5,200000,0,1500,1000,71492000,1898.09997558594,0.416666686534882,5.20288705825806,3911
-59,MARS,Planet,0,0.25,0.08,50000,0,10,10,3396190,0.641600012779236,1.02083349227905,1.52371001243591,3911
-66,EARTH,Planet,0,0.29,0.08,200000,0,1,40,6378140,5.97200012207031,0.999999940395355,1.00000095367432,3911
-68,NEPTUNE,Planet,0,0.29,0.08,50000,0,7200,60,24622000,102.400001525879,0.666666686534882,30.0699195861816,3911
-73,SATURN,Planet,0,0.34,0.5,200000,0,900,500,60288000,568.340026855469,0.437499970197678,9.53667640686035,3911
-74,URANUS,Planet,0,0.3,0.5,50000,0,7000,80,25362000,86.8099975585938,0.708333313465118,19.1891708374023,3911
-86,1 CERES,Asteroid,0,0.04,0.08,50000,0,5,2.5,455000,0.000937999982852489,0.375,2.76797246932983,3911
-87,LUNA,Moons,0,0.11,0.01,50000,0,12,2.5,1737400,0.0734200030565262,1,1.00000095367432,3911
-91,IO,Moons,0,0.63,0.4,200000,0,1000,2.5,1821500,0.0892999991774559,1,5.20288705825806,3911
-92,EUROPA,Moons,0,0.67,0.08,200000,0,150,2.5,1561000,0.0480000004172325,1,5.20288705825806,3911
-93,GANYMEDE,Moons,0,0.43,0.08,200000,0,30,25,2631000,0.148100003600121,1,5.20288705825806,3911
-94,CALLISTO,Moons,0,0.2,0.08,50000,0,15,2.5,2410500,0.107500001788139,1,5.20288705825806,3911
-97,RHEA,Moons,0,0.95,0.08,50000,0,10,2.5,763500,0.00230000005103648,1,9.53667640686035,3911
-98,TITAN,Moons,0,0.21,0.08,50000,0,1,2.5,2574500,0.134499996900558,1,9.53667640686035,3911
-99,DIONE,Moons,0,0.7,0.08,50000,0,12,2.5,564000,0.00109000003430992,1,9.53667640686035,3911
-100,TETHYS,Moons,0,0.8,0.08,50000,0,12,2.5,531000,0.000600000028498471,1,9.53667640686035,3911
-101,ENCELADUS,Moons,0,0.9,0.08,50000,0,12,2.5,252000,0.000108000000182074,1,9.53667640686035,3911
-106,TITANIA,Moons,0,0.35,0.08,50000,0,1.5,2.5,788000,0.00340000004507601,1,19.1891708374023,3911
-107,OBERON,Moons,0,0.31,0.08,50000,0,1.5,2.5,761000,0.00300000002607703,1,19.1891708374023,3911
-108,UMBRIEL,Moons,0,0.26,0.08,50000,0,1.5,2.5,584500,0.00120000005699694,1,19.1891708374023,3911
-109,ARIEL,Moons,0,0.53,0.08,50000,0,1.5,2.5,578500,0.00120000005699694,1,19.1891708374023,3911
-113,TRITON,Moons,0,0.9,0.08,50000,0,1.5,2.5,1353000,0.0214000009000301,1,30.0699195861816,3911
-116,CHARON,Moons,0,0.41,0.08,50000,0,1.5,2.5,606000,0.00150000001303852,1,39.482120513916,3911
-229,IAPETUS,Moons,0,0.2,0.08,50000,0,1.5,2.5,735000,0.00179999996908009,1,9.53667640686035,3911`;
+            const CSV_DATA = `id,name,objectType,gravity,albedo,internalFlux,heatCapacityRock,water,radiation,magneticFieldVisualization,radiusKm,mass1E24,rotationPeriod,distanceAU,oceanDepth,diameter
+0,SUN,Other,274,0,0,0,0,100000,100000,45383.51953125,1989000,1,1,3911,
+8,PLUTO,Planet,0,0.72,0.08,50000,0,1.5,2.5,1188000,0.0138999996706843,6.375,39.482120513916,3911,
+10,MERCURY,Planet,0,0.09,0.08,200000,0,30,15,2439700,0.330099999904633,58,0.387099295854568,3911,
+24,VENUS,Planet,0,0.76,0.08,200000,0,0,10,6051800,4.86700010299683,121.499977111816,0.723335683345795,3911,
+56,JUPITER,Planet,0,0.34,0.5,200000,0,1500,1000,71492000,1898.09997558594,0.416666686534882,5.20288705825806,3911,
+59,MARS,Planet,0,0.25,0.08,50000,0,10,10,3396190,0.641600012779236,1.02083349227905,1.52371001243591,3911,
+66,EARTH,Planet,0,0.29,0.08,200000,0,1,40,6378140,5.97200012207031,0.999999940395355,1.00000095367432,3911,
+68,NEPTUNE,Planet,0,0.29,0.08,50000,0,7200,60,24622000,102.400001525879,0.666666686534882,30.0699195861816,3911,
+73,SATURN,Planet,0,0.34,0.5,200000,0,900,500,60288000,568.340026855469,0.437499970197678,9.53667640686035,3911,
+74,URANUS,Planet,0,0.3,0.5,50000,0,7000,80,25362000,86.8099975585938,0.708333313465118,19.1891708374023,3911,
+86,1 CERES,Asteroid,0,0.04,0.08,50000,0,5,2.5,455000,0.000937999982852489,0.375,2.76797246932983,3911,0.3155799
+87,LUNA,Moons,0,0.11,0.01,50000,0,12,2.5,1737400,0.0734200030565262,1,1.00000095367432,3911,
+91,IO,Moons,0,0.63,0.4,200000,0,1000,2.5,1821500,0.0892999991774559,1,5.20288705825806,3911,
+92,EUROPA,Moons,0,0.67,0.08,200000,0,150,2.5,1561000,0.0480000004172325,1,5.20288705825806,3911,
+93,GANYMEDE,Moons,0,0.43,0.08,200000,0,30,25,2631000,0.148100003600121,1,5.20288705825806,3911,
+94,CALLISTO,Moons,0,0.2,0.08,50000,0,15,2.5,2410500,0.107500001788139,1,5.20288705825806,3911,
+97,RHEA,Moons,0,0.95,0.08,50000,0,10,2.5,763500,0.00230000005103648,1,9.53667640686035,3911,
+98,TITAN,Moons,0,0.21,0.08,50000,0,1,2.5,2574500,0.134499996900558,1,9.53667640686035,3911,
+99,DIONE,Moons,0,0.7,0.08,50000,0,12,2.5,564000,0.00109000003430992,1,9.53667640686035,3911,
+100,TETHYS,Moons,0,0.8,0.08,50000,0,12,2.5,531000,0.000600000028498471,1,9.53667640686035,3911,
+101,ENCELADUS,Moons,0,0.9,0.08,50000,0,12,2.5,252000,0.000108000000182074,1,9.53667640686035,3911,
+106,TITANIA,Moons,0,0.35,0.08,50000,0,1.5,2.5,788000,0.00340000004507601,1,19.1891708374023,3911,
+107,OBERON,Moons,0,0.31,0.08,50000,0,1.5,2.5,761000,0.00300000002607703,1,19.1891708374023,3911,
+108,UMBRIEL,Moons,0,0.26,0.08,50000,0,1.5,2.5,584500,0.00120000005699694,1,19.1891708374023,3911,
+109,ARIEL,Moons,0,0.53,0.08,50000,0,1.5,2.5,578500,0.00120000005699694,1,19.1891708374023,3911,
+113,TRITON,Moons,0,0.9,0.08,50000,0,1.5,2.5,1353000,0.0214000009000301,1,30.0699195861816,3911,
+116,CHARON,Moons,0,0.41,0.08,50000,0,1.5,2.5,606000,0.00150000001303852,1,39.482120513916,3911,
+229,IAPETUS,Moons,0,0.2,0.08,50000,0,1.5,2.5,735000,0.00179999996908009,1,9.53667640686035,3911,`;
 
             // ═══════════════════════════════════════════════════════════════
             // PARSE CSV
@@ -1050,6 +1050,13 @@
                     p.computedGravity = p.gravity;
                 }
                 p.surface = 4 * Math.PI * p.radiusKm * p.radiusKm;
+                // Towed-asteroid surface (SolarBody-null fallback, see docs/GAME_MECHANICS_FINDINGS.md §11b)
+                const d = p.diameter;
+                const dKm = (d !== undefined && d !== null && d !== "" && !isNaN(d))
+                    ? Number(d) : (2 * p.radiusKm / 1000);
+                p.diameterKm = dKm;
+                const rTowed = dKm * 1000 / 2;
+                p.surfaceTowed = 4 * Math.PI * rTowed * rTowed;
             });
 
             // ═══════════════════════════════════════════════════════════════
@@ -1098,7 +1105,14 @@
                 }
 
                 const R_m = planet.radiusKm;
-                const surface = planet.surface;
+                // Towed asteroids lose SolarBody after pre-warm (confirmed via
+                // BepInEx diagnostic). Normal Surface during pre-warm, bugged
+                // diameter-based Surface during gameplay.
+                const isTowed =
+                    effectiveDistAU !== undefined &&
+                    Math.abs(effectiveDistAU - planet.distanceAU) > 1e-6 &&
+                    planet.objectType === "Asteroid";
+                let surface = planet.surface; // starts normal, switches to towed after pre-warm
                 const distAU =
                     effectiveDistAU !== undefined
                         ? effectiveDistAU
@@ -1143,9 +1157,9 @@
 
                 // ── Pressure constant ─────────────────────────────────────────
                 // pressure = K × M_atm^(1/gasScaling), K = 1000g / surface / 101325
-                const K_pressure = (1000.0 * g) / surface / 101325.0;
+                let K_pressure = (1000.0 * g) / surface / 101325.0;
 
-                // ── Convert user inputs from kt → tonnes ─────────────────────
+                // ── Convert user inputs from kt to tonnes ─────────────────────
                 const resourceTonnes = {};
                 RESOURCES.forEach((r) => {
                     resourceTonnes[r.id] = (resourceKt[r.id] || 0) * 1000;
@@ -1157,7 +1171,7 @@
                 let prevHC = 0;
                 let satPressOld = {};
 
-                // Deposit state: start all as solid (game-equivalent: fresh/unknown state)
+                // Deposit state: start all as solid (game-equivalent fresh state)
                 let deposits = {};
                 RESOURCES.forEach((r) => {
                     const total = resourceTonnes[r.id];
@@ -1437,6 +1451,14 @@
                     if (stableCount >= 3 && !options?.noConverge) {
                         converged = true;
                         break;
+                    }
+                    // Towed asteroids: switch to bugged surface at end of pre-warm.
+                    // Matches game: SolarBody destroyed after AfterLoadState loop.
+                    if (isTowed && tick === PREWARM_TICKS - 1 && surface === planet.surface) {
+                        surface = planet.surfaceTowed;
+                        K_pressure = (1000.0 * g) / surface / 101325.0;
+                        stableCount = 0;
+                        prevGasFracs = {}; prevPvaps = {};
                     }
                 }
 
@@ -1731,15 +1753,22 @@
                 const canTf = g >= C.GRAV_THRESHOLD;
                 const effDist = getEffectiveDistanceAU();
                 const isAsteroid = p.objectType === "Asteroid";
+                const isTowed = isAsteroid &&
+                    Math.abs(effDist - p.distanceAU) > 1e-6;
+                const radiusKm = isTowed ? (p.diameterKm / 2) : (p.radiusKm / 1000);
+                const radiusUnit = isTowed ? "m" : "Mm";
+                const radiusDisplay = isTowed
+                    ? (radiusKm * 1000).toFixed(0)
+                    : radiusKm.toFixed(2);
                 document.getElementById("planet-stats").innerHTML = `
     <div class="stat-box"><div class="label">Gravity</div>
       <div class="value" style="color:${canTf ? "" : "var(--red)"}">
         ${g.toFixed(3)} m/s²
       </div></div>
-    <div class="stat-box"><div class="label">Distance${isAsteroid ? " (orbit)" : ""}</div>
-      <div class="value">${effDist.toFixed(3)} AU${isAsteroid ? " ⚡" : ""}</div></div>
+    <div class="stat-box"><div class="label">Orbit</div>
+      <div class="value">${effDist.toFixed(3)} AU</div></div>
     <div class="stat-box"><div class="label">Radius</div>
-      <div class="value">${R} Mm</div></div>
+      <div class="value" style="color:">${radiusDisplay} ${radiusUnit}</div></div>
     <div class="stat-box"><div class="label">Albedo / Int.Flux</div>
       <div class="value">${p.albedo} / ${p.internalFlux}</div></div>
     <div class="stat-box"><div class="label">Rotation Period</div>
@@ -2162,8 +2191,8 @@
       <thead>
         <tr>
           <th>Resource</th>
-          <th style="color:var(--gas-color)">⬡ Gas</th>
-          <th style="color:var(--liquid-color)">〰 Liquid</th>
+          <th style="color:var(--gas-color)">ⸯⸯ Gas</th>
+          <th style="color:var(--liquid-color)">≈ Liquid</th>
           <th style="color:var(--solid-color)">◼ Solid</th>
         </tr>
       </thead>
@@ -2193,7 +2222,9 @@
             // PERSISTENCE — survives F5/page reload
             // ═══════════════════════════════════════════════════════════════
             const LS = "se_tc_";
+            let _loading = true;
             function saveState() {
+                if (_loading) return;
                 try {
                     const sel = document.getElementById("planet-select");
                     if (sel) localStorage.setItem(LS + "planet", sel.value);
@@ -2213,6 +2244,7 @@
                 } catch (e) {}
             }
             function loadState() {
+                _loading = true;
                 try {
                     const pid = localStorage.getItem(LS + "planet");
                     const sel = document.getElementById("planet-select");
@@ -2222,13 +2254,15 @@
                         sel.querySelector(`option[value="${pid}"]`)
                     ) {
                         sel.value = pid;
+                        updatePlanetStats(); // builds orbit-select options
                         const ov = localStorage.getItem(LS + "orbit");
                         if (ov) {
-                            const orbitSel =
-                                document.getElementById("orbit-select");
-                            if (orbitSel) orbitSel.value = ov;
+                            const orbitSel = document.getElementById("orbit-select");
+                            if (orbitSel) {
+                                orbitSel.value = ov;
+                                updatePlanetStats(); // re-render with correct orbit
+                            }
                         }
-                        updatePlanetStats();
                     }
                     MIRROR_ORBITS.forEach((_, i) => {
                         const v = localStorage.getItem(LS + `m${i}`);
@@ -2245,6 +2279,7 @@
                     });
                     updateMirrorHints(getSelectedPlanet());
                 } catch (e) {}
+                _loading = false;
             }
 
             // ═══════════════════════════════════════════════════════════════
