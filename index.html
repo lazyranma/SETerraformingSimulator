@@ -1390,7 +1390,7 @@
                             liquidFrac = Math.max(0, liquidFrac);
                         }
 
-                        const solidFrac = Math.max(0, 1 - gasFrac - liquidFrac);
+                        const solidFrac = 1 - gasFrac - liquidFrac; // Game does not clamp — negative solid mass can appear
 
                         newDeposits[r.id] = {
                             gas: total * gasFrac,
@@ -2114,13 +2114,13 @@
                                 ? `<span class="val-liquid">${fmtKt(liqKt)}</span>`
                                 : `<span class="val-zero">—</span>`;
                         const solStr =
-                            solKt > 0
+                            solKt !== 0
                                 ? `<span class="val-solid">${fmtKt(solKt)}</span>`
                                 : `<span class="val-zero">—</span>`;
                         const pctStr = `${gf.toFixed(0)}% / ${lf.toFixed(0)}% / ${sf.toFixed(0)}%`;
-                        const barW_g = gf.toFixed(1);
-                        const barW_l = lf.toFixed(1);
-                        const barW_s = sf.toFixed(1);
+                        const barW_g = Math.max(0, gf).toFixed(1);
+                        const barW_l = Math.max(0, lf).toFixed(1);
+                        const barW_s = Math.max(0, sf).toFixed(1);
 
                         // Show P_sat and T_boil for context
                         const psat =
