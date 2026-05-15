@@ -2153,16 +2153,6 @@
                     return;
                 }
 
-                const resourceKt = {};
-                RESOURCES.forEach((res) => {
-                    resourceKt[res.id] = Math.max(
-                        0,
-                        Number(
-                            document.getElementById(`res-${res.id}`)?.value,
-                        ) || 0,
-                    );
-                });
-
                 // ── Summary cards ─────────────────────────────────────────────
                 const totalAtmKt = RESOURCES.reduce(
                     (s, res) => s + (r.deposits[res.id]?.gas || 0) / 1000,
@@ -2205,7 +2195,10 @@
 
                 // ── Phase state table ─────────────────────────────────────────
                 const hasAnyResource = RESOURCES.some(
-                    (res) => resourceKt[res.id] > 0,
+                    (res) => {
+                        const d = r.deposits[res.id];
+                        return d && d.total > 0;
+                    },
                 );
                 let tableRows = "";
                 if (hasAnyResource) {
