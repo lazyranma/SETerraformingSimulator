@@ -1,0 +1,2386 @@
+<!doctype html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Solar Expanse — Terraforming Simulator (Tier 3 Swing)</title>
+        <style>
+            :root {
+                --bg: #07090f;
+                --surface: #0c1120;
+                --surface2: #111928;
+                --surface3: #172138;
+                --border: #1c2d4a;
+                --border2: #243a60;
+                --text: #b0bdd4;
+                --text-dim: #5a6e8a;
+                --text-bright: #e0ebff;
+                --accent: #3a8ff0;
+                --accent2: #44d4e8;
+                --green: #40d878;
+                --orange: #ff9840;
+                --red: #ff5050;
+                --yellow: #f5d64a;
+                --purple: #a060f8;
+                --gas-color: #36c8e0;
+                --liquid-color: #3e8ef8;
+                --solid-color: #6488b0;
+            }
+            * {
+                box-sizing: border-box;
+                margin: 0;
+                padding: 0;
+            }
+            html {
+                scroll-behavior: smooth;
+            }
+            body {
+                background: var(--bg);
+                color: var(--text);
+                font-family:
+                    "Segoe UI",
+                    system-ui,
+                    -apple-system,
+                    sans-serif;
+                font-size: 13.5px;
+                line-height: 1.5;
+                min-height: 100vh;
+            }
+            a {
+                color: var(--accent);
+            }
+
+            /* ── Layout ── */
+            header {
+                background: linear-gradient(
+                    135deg,
+                    #0d1a35 0%,
+                    #0a1224 60%,
+                    #07090f 100%
+                );
+                border-bottom: 1px solid var(--border);
+                padding: 16px 24px;
+                display: flex;
+                align-items: center;
+                gap: 16px;
+            }
+            header .logo {
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--text-bright);
+                letter-spacing: -0.5px;
+            }
+            header .logo span {
+                color: var(--accent2);
+            }
+            header .subtitle {
+                color: var(--text-dim);
+                font-size: 12px;
+            }
+
+            #app {
+                display: grid;
+                grid-template-columns: 300px 1fr;
+                gap: 0;
+                min-height: calc(100vh - 60px);
+            }
+            .inputs-panel {
+                border-right: 1px solid var(--border);
+                overflow-y: auto;
+                padding: 16px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                background: var(--surface);
+            }
+            .results-panel {
+                padding: 16px;
+                overflow-y: auto;
+            }
+
+            /* ── Cards ── */
+            .card {
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 14px;
+            }
+            .card h2 {
+                font-size: 11px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.8px;
+                color: var(--text-dim);
+                margin-bottom: 10px;
+            }
+
+            /* ── Planet selector ── */
+            select {
+                width: 100%;
+                background: var(--surface3);
+                border: 1px solid var(--border2);
+                border-radius: 6px;
+                color: var(--text-bright);
+                padding: 7px 10px;
+                font-size: 13.5px;
+                cursor: pointer;
+                outline: none;
+                appearance: none;
+                background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%235a6e8a' d='M6 8L0 0h12z'/%3E%3C/svg%3E");
+                background-repeat: no-repeat;
+                background-position: right 10px center;
+                padding-right: 28px;
+            }
+            select:hover {
+                border-color: var(--accent);
+            }
+            select option {
+                background: #111928;
+            }
+
+            .planet-stats {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 6px;
+                margin-top: 10px;
+            }
+            .stat-box {
+                background: var(--surface3);
+                border: 1px solid var(--border);
+                border-radius: 5px;
+                padding: 6px 8px;
+            }
+            .stat-box .label {
+                font-size: 10px;
+                color: var(--text-dim);
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            .stat-box .value {
+                font-size: 13px;
+                color: var(--text-bright);
+                font-weight: 600;
+                margin-top: 1px;
+            }
+
+            /* ── Mirror inputs ── */
+            .orbit-grid {
+                display: grid;
+                grid-template-columns: auto 1fr;
+                gap: 6px 10px;
+                align-items: center;
+            }
+            .orbit-label {
+                font-size: 12px;
+                color: var(--text-dim);
+                white-space: nowrap;
+            }
+            .orbit-label .au {
+                font-size: 10px;
+                color: #3a5070;
+            }
+            .orbit-strength {
+                font-size: 10px;
+                color: var(--accent);
+                text-align: right;
+                grid-column: 2;
+                margin-top: -4px;
+                margin-bottom: 2px;
+            }
+
+            input[type="number"] {
+                width: 100%;
+                background: var(--surface3);
+                border: 1px solid var(--border2);
+                border-radius: 5px;
+                color: var(--text-bright);
+                padding: 5px 8px;
+                font-size: 13px;
+                outline: none;
+                -moz-appearance: textfield;
+            }
+            input[type="number"]::-webkit-outer-spin-button,
+            input[type="number"]::-webkit-inner-spin-button {
+                -webkit-appearance: none;
+            }
+            input[type="number"]:hover {
+                border-color: var(--accent);
+            }
+            input[type="number"]:focus {
+                border-color: var(--accent2);
+                box-shadow: 0 0 0 2px rgba(68, 212, 232, 0.12);
+            }
+
+            /* ── Resources ── */
+            .resource-grid {
+                display: grid;
+                grid-template-columns: 22px 1fr 1fr 1fr;
+                gap: 4px 4px;
+                align-items: center;
+            }
+            .resource-icon {
+                width: 20px;
+                height: 20px;
+                object-fit: contain;
+                image-rendering: auto;
+                vertical-align: middle;
+            }
+            .resource-name {
+                font-size: 12px;
+                color: var(--text);
+            }
+            .resource-unit {
+                font-size: 11px;
+                color: var(--text-dim);
+                text-align: right;
+                min-width: 24px;
+            }
+            .resource-shortcut {
+                grid-column: 2 / 4;
+                display: flex;
+                gap: 4px;
+                flex-wrap: wrap;
+                margin-top: -3px;
+                margin-bottom: 3px;
+            }
+            .quick-btn {
+                font-size: 10px;
+                background: var(--surface3);
+                border: 1px solid var(--border2);
+                border-radius: 3px;
+                color: var(--text-dim);
+                padding: 1px 5px;
+                cursor: pointer;
+                transition: all 0.15s;
+            }
+            .quick-btn:hover {
+                color: var(--accent2);
+                border-color: var(--accent2);
+            }
+
+            /* ── Calculate button ── */
+            .stepper-btn {
+                width: 22px;
+                height: 26px;
+                padding: 0;
+                background: var(--surface3);
+                border: 1px solid var(--border2);
+                border-radius: 4px;
+                color: var(--text-dim);
+                font-size: 14px;
+                cursor: pointer;
+                line-height: 1;
+                flex-shrink: 0;
+                transition: all 0.15s;
+            }
+            .stepper-btn:hover {
+                color: var(--accent2);
+                border-color: var(--accent2);
+            }
+
+            .calc-btn {
+                width: 100%;
+                padding: 10px;
+                background: linear-gradient(135deg, #1a4a90, #1a6ba0);
+                border: 1px solid #2060c0;
+                border-radius: 7px;
+                color: #c0e0ff;
+                font-size: 14px;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.15s;
+                letter-spacing: 0.3px;
+            }
+            .calc-btn:hover {
+                background: linear-gradient(135deg, #2060b8, #2080c0);
+                color: #e0f0ff;
+                box-shadow: 0 0 20px rgba(48, 128, 200, 0.3);
+            }
+            .defaults-btn {
+                padding: 10px 16px;
+                background: var(--surface3);
+                border: 1px solid var(--border2);
+                border-radius: 7px;
+                color: var(--text-dim);
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.15s;
+                white-space: nowrap;
+            }
+            .defaults-btn:hover {
+                color: var(--accent2);
+                border-color: var(--accent2);
+            }
+
+            .clear-btn {
+                padding: 10px 16px;
+                background: var(--surface3);
+                border: 1px solid var(--border2);
+                border-radius: 7px;
+                color: var(--text-dim);
+                font-size: 13px;
+                cursor: pointer;
+                transition: all 0.15s;
+                white-space: nowrap;
+            }
+            .clear-btn:hover {
+                color: var(--red);
+                border-color: var(--red);
+            }
+
+            .calc-btn:active {
+                transform: scale(0.99);
+            }
+
+            /* ── Results ── */
+            .results-placeholder {
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                height: 100%;
+                min-height: 300px;
+                color: var(--text-dim);
+                gap: 12px;
+            }
+            .results-placeholder .icon {
+                font-size: 48px;
+                opacity: 0.3;
+            }
+
+            .result-grid {
+                display: grid;
+                grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+                gap: 10px;
+                margin-bottom: 14px;
+            }
+            .result-card {
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                padding: 12px 14px;
+            }
+            .result-card .rc-label {
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.7px;
+                color: var(--text-dim);
+                margin-bottom: 4px;
+            }
+            .result-card .rc-value {
+                font-size: 22px;
+                font-weight: 700;
+                color: var(--text-bright);
+                line-height: 1.1;
+            }
+            .result-card .rc-sub {
+                font-size: 11px;
+                color: var(--text-dim);
+                margin-top: 3px;
+            }
+            .result-card .rc-range {
+                font-size: 12px;
+                color: var(--text);
+                margin-top: 5px;
+                display: flex;
+                gap: 8px;
+            }
+            .rc-range span {
+                white-space: nowrap;
+            }
+            .rc-range .cold {
+                color: #6aacff;
+            }
+            .rc-range .hot {
+                color: var(--orange);
+            }
+
+            .temp-cold .rc-value {
+                color: #6aacff;
+            }
+            .temp-warm .rc-value {
+                color: var(--orange);
+            }
+            .temp-hot .rc-value {
+                color: var(--red);
+            }
+            .temp-ok .rc-value {
+                color: var(--green);
+            }
+
+            .pressure-ok .rc-value {
+                color: var(--green);
+            }
+            .pressure-low .rc-value {
+                color: var(--text-dim);
+            }
+            .pressure-high .rc-value {
+                color: var(--red);
+            }
+
+            .water-full .rc-value {
+                color: var(--accent2);
+            }
+            .water-low .rc-value {
+                color: var(--text-dim);
+            }
+
+            /* ── Phase table ── */
+            .phase-section {
+                background: var(--surface2);
+                border: 1px solid var(--border);
+                border-radius: 8px;
+                overflow: hidden;
+                margin-bottom: 14px;
+            }
+            .phase-section h3 {
+                font-size: 10px;
+                text-transform: uppercase;
+                letter-spacing: 0.7px;
+                color: var(--text-dim);
+                padding: 10px 14px 8px;
+                border-bottom: 1px solid var(--border);
+            }
+            .phase-table {
+                width: 100%;
+                border-collapse: collapse;
+            }
+            .phase-table th {
+                font-size: 10px;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                color: var(--text-dim);
+                padding: 6px 10px;
+                text-align: right;
+            }
+            .phase-table th:first-child {
+                text-align: left;
+            }
+            .phase-table td {
+                padding: 6px 10px;
+                text-align: right;
+                font-size: 12.5px;
+                border-top: 1px solid var(--border);
+            }
+            .phase-table td:first-child {
+                text-align: left;
+            }
+            .phase-table tr:hover td {
+                background: rgba(255, 255, 255, 0.02);
+            }
+            .phase-table .res-name {
+                color: var(--text-bright);
+                font-weight: 500;
+            }
+            .phase-table .res-total {
+                color: var(--text-dim);
+                font-size: 11px;
+            }
+            .phase-table .val-gas {
+                color: var(--gas-color);
+            }
+            .phase-table .val-liquid {
+                color: var(--liquid-color);
+            }
+            .phase-table .val-solid {
+                color: var(--solid-color);
+            }
+            .phase-table .val-zero {
+                color: #2a3a50;
+            }
+
+            /* Phase bar */
+            .phase-bar {
+                height: 6px;
+                border-radius: 3px;
+                background: var(--surface3);
+                display: flex;
+                overflow: hidden;
+                gap: 1px;
+                min-width: 80px;
+                width: 100%;
+            }
+            .phase-bar .bar-gas {
+                background: var(--gas-color);
+            }
+            .phase-bar .bar-liquid {
+                background: var(--liquid-color);
+            }
+            .phase-bar .bar-solid {
+                background: var(--solid-color);
+            }
+
+            /* ── Simulation info ── */
+            .sim-info {
+                font-size: 11px;
+                color: var(--text-dim);
+                padding: 8px 14px;
+                border-top: 1px solid var(--border);
+                display: flex;
+                gap: 16px;
+                flex-wrap: wrap;
+            }
+            .sim-info span {
+                white-space: nowrap;
+            }
+            .sim-info .highlight {
+                color: var(--accent2);
+            }
+
+            /* ── Error state ── */
+            .error-box {
+                background: rgba(255, 80, 80, 0.1);
+                border: 1px solid rgba(255, 80, 80, 0.3);
+                border-radius: 7px;
+                padding: 14px;
+                color: #ff9090;
+            }
+
+            /* ── Responsive ── */
+            @media (max-width: 900px) {
+                #app {
+                    grid-template-columns: 1fr;
+                }
+                .inputs-panel {
+                    border-right: none;
+                    border-bottom: 1px solid var(--border);
+                }
+            }
+
+            /* ── Divider ── */
+            .divider {
+                height: 1px;
+                background: var(--border);
+                margin: 6px 0;
+            }
+
+            /* ── Tooltips ── */
+            [title] {
+                cursor: help;
+            }
+
+            /* ── Tag ── */
+            .tag {
+                display: inline-block;
+                font-size: 9px;
+                padding: 1px 5px;
+                border-radius: 3px;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+                vertical-align: middle;
+                margin-left: 4px;
+            }
+            .tag-planet {
+                background: rgba(58, 143, 240, 0.2);
+                color: var(--accent);
+            }
+            .tag-moon {
+                background: rgba(64, 216, 120, 0.15);
+                color: var(--green);
+            }
+            .tag-dwarf {
+                background: rgba(160, 96, 248, 0.2);
+                color: var(--purple);
+            }
+            .tag-asteroid {
+                background: rgba(245, 214, 74, 0.15);
+                color: var(--yellow);
+            }
+        </style>
+    </head>
+    <body>
+        <header>
+            <div>
+                <div class="logo"><span>Solar Expanse</span></div>
+                <div class="subtitle">Terraforming Simulator <span style="color:#f0a040;font-size:0.8em;">(Tier 3 Swing Model)</span></div>
+            </div>
+        </header>
+
+        <div id="app">
+            <!-- LEFT: Inputs -->
+            <div class="inputs-panel">
+                <!-- Planet -->
+                <div class="card">
+                    <h2>🪐 Planetary Body</h2>
+                    <select id="planet-select"></select>
+                    <div class="planet-stats" id="planet-stats"></div>
+                    <div
+                        id="orbit-selector"
+                        style="display: none; margin-top: 10px"
+                    >
+                        <label style="font-size: 11px; color: var(--text-dim)"
+                            >🚀 Towed Orbit</label
+                        >
+                        <select
+                            id="orbit-select"
+                            style="width: 100%; margin-top: 4px"
+                        ></select>
+                    </div>
+                </div>
+
+                <!-- Mirrors -->
+                <div class="card">
+                    <h2>🌓 Orbital Mirrors &amp; Shades</h2>
+                    <div
+                        style="
+                            font-size: 11px;
+                            color: var(--text-dim);
+                            margin-bottom: 8px;
+                        "
+                    >
+                        Strength = 0.216 / (d²·Δd²) per station.
+                    </div>
+                    <div class="orbit-grid" id="mirror-inputs"></div>
+                    <div
+                        class="divider"
+                        id="mirror-shade-divider"
+                        style="margin-top: 10px; display: none"
+                    ></div>
+                </div>
+
+                <!-- Resources -->
+                <div class="card">
+                    <h2>☁️ Atmosphere &amp; Deposits</h2>
+                    <div class="resource-grid" id="resource-inputs"></div>
+                </div>
+
+                <div style="display: flex; gap: 8px">
+                    <button
+                        class="defaults-btn"
+                        onclick="applyDefaults()"
+                        style="flex: 1"
+                    >
+                        📋 Defaults
+                    </button>
+                    <button
+                        class="clear-btn"
+                        onclick="clearAll()"
+                        style="flex: 1"
+                    >
+                        🗑 Clear All
+                    </button>
+                </div>
+            </div>
+
+            <!-- RIGHT: Results -->
+            <div class="results-panel">
+                <div id="results">
+                    <div class="results-placeholder">
+                        <div class="icon">🌍</div>
+                        <div>
+                            Select a planet, set conditions, and click
+                            <b>Calculate</b>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script>
+            // ═══════════════════════════════════════════════════════════════
+            // CONSTANTS (from decompiled Assembly-CSharp.dll)
+            // ═══════════════════════════════════════════════════════════════
+            const C = {
+                G: 6.67e-11, // Gravitational constant
+                SIGMA: 5.67e-8, // Stefan-Boltzmann (W/m²/K⁴)
+                AU_TO_M: 1.4959786e11, // MyMathf.Au
+                SOLAR_FLUX: 3.828e26, // solarFlux (W)
+                STAR_LUM: 1.0, // star luminosity (1.0 = our Sun)
+                GAS_SCALING: 0.448, // TerraformationConfig gasScaling
+                R_GAS: 8.314, // Universal gas constant (J/mol/K)
+                EARTH_PRESSURE: 1.0, // reference pressure for CC (atm)
+                WATER_SCALING: 2.52, // ParameterSettingsWater.waterScaling (ScriptableObject value)
+                OCEAN_DEPTH: 3911.0, // ObjectInfo.oceanDepth (m)
+                SURF_WATER_COV: 0.7, // surfaceWaterCoverage
+                EARTH_OC_WEIGHT: 1.4e18, // earthOceanWeight (tonnes reference)
+                MIRROR_PARAM: 0.216, // build_terraform_space_mirror specialAbilityParameter
+                SHADE_PARAM: 0.006, // |build_terraform_space_shade specialAbilityParameter|
+                DIST_PARAM: 1.0, // strengthParameterFromDistanceToTarget
+                NORMAL_HEAT_DEPTH: 0.2, // normalHeatDepth (ScriptableObject override)
+                ATM_PERCENTAGE: 0.01, // atmospherePercentage
+                WATER_HC_PARAM: 4186000, // waterHeatCapacityParameter
+                MIN_SURF_COV: 1e-8, // minSurfaceCoverage (ScriptableObject override)
+                EARTH_TEMP_SWING: 50.0, // earthTemperatureSwing (K)
+                GRAV_THRESHOLD: 0.08, // gravityLowerThreshold
+                SAT_MAX_CHANGE: 0.1, // saturationMaxChange
+                HC_ROCK_BASE: 200000.0, // heatCapacityRockBase (global TerraformationConfig constant)
+                MIN_KELWIN: -273.15, // minKelwin (offset Celsius↔Kelvin)
+                PRESSURE_SCALING: 1.0, // pressureScalingParameter
+                // ── Tier 3 swing model constants ──────────────────────────
+                T_REF: 254.5, // Reference T_eq at 1 AU (Earth albedo 0.3, no mirrors/shades)
+                ROT_FACTOR_EARTH: 0.786, // rotFactor for Earth calibration point (P=1d, HC=200k, T_eq=254.5K)
+                K_HEAT_TRANSPORT: 0.05, // Atmospheric heat transport coefficient (pressure-based)
+                HEAT_TRANSPORT_EXP: 1.5, // Exponent for pressure in heat transport damping
+                // ───────────────────────────────────────────────────────────
+            };
+            const TICK = {
+                PREWARM: 15,
+                MIN_CONVERGE: 20,
+                BATCH: 150,
+                MAX: 1000,
+            };
+
+            // ═══════════════════════════════════════════════════════════════
+            // MIRROR ORBIT DEFINITIONS
+            // Solar orbit distance hardcoded in DistanceToSunInAU getter:
+            //   if (objectTypes == EObjectTypes.SolarOrbit) result = 0.01f;
+            // ═══════════════════════════════════════════════════════════════
+            const MIRROR_ORBITS = [
+                { name: "Solar", au: 0.01, emoji: "☀️" },
+                { name: "Mercury", au: 0.387099, emoji: "🌑" },
+                { name: "Venus", au: 0.723336, emoji: "⚪" },
+                { name: "Earth", au: 1.000001, emoji: "🔵" },
+                { name: "Mars", au: 1.52371, emoji: "🔴" },
+            ];
+
+            // ═══════════════════════════════════════════════════════════════
+            // RESOURCE DATA (from sharedassets0.assets)
+            // tBoil/tMelt in Kelvin, pTriple in atm, hvap in J/mol
+            // ═══════════════════════════════════════════════════════════════
+            // ═══════════════════════════════════════════════════════════════
+            // DEFAULT DEPOSITS (extracted from NEW2020 save, excluding underground)
+            // Values in kilotonnes (kt). Combine multiple states of same resource.
+            // ═══════════════════════════════════════════════════════════════
+            const SAVE_DEPOSITS = {
+                8: { nitrogen:{total:300.0,gas:107.2,solid:192.8}, silicon:{total:710.0,solid:710.0} },
+                10: { silicon:{total:500.0,solid:500.0,underground:7000.0} },
+                24: { nitrogen:{total:2519.6,gas:2519.6}, co2:{total:81072.0,gas:81072.0}, noblegas:{total:214.4,gas:214.4}, silicon:{total:500.0,solid:500.0,underground:13000.0} },
+                56: { nitrogen:{total:627553.0,gas:627553.0}, water:{total:205644.8,gas:186949.8,liquid:18695.0}, he3:{total:1027553.0,gas:1027553.0}, hydrogen:{total:73152375.8,gas:73152375.8} },
+                59: { nitrogen:{total:19.0,gas:19.0}, oxygen:{total:1.5,gas:1.5,underground:500.0}, co2:{total:964.7,gas:964.7}, water:{total:69.3,gas:0.7,solid:68.6,underground:2002.8}, metal:{total:20.0,solid:20.0,underground:20200.0}, silicon:{total:40000.0,solid:40000.0} },
+                66: { nitrogen:{total:8374.0,gas:8374.0}, oxygen:{total:2260.0,gas:2260.0}, co2:{total:4.4,gas:4.4}, noblegas:{total:100.0,gas:100.0}, water:{total:15983.2,gas:300.3,liquid:15682.9,underground:308.8}, silicon:{total:7600.0,solid:7600.0,underground:80600.0} },
+                68: { nitrogen:{total:40739.8,gas:40739.8}, noblegas:{total:16739.8,gas:16739.8}, water:{total:0.2,gas:0.2,liquid:0.02}, he3:{total:3700739.8,gas:3700739.8}, hydrogen:{total:15817.9,gas:15817.9} },
+                73: { nitrogen:{total:509131.3,gas:509131.3}, noblegas:{total:40281.0,gas:40281.0}, he3:{total:809131.3,gas:809131.3}, hydrogen:{total:38790565.9,gas:38790565.9} },
+                74: { nitrogen:{total:33626.6,gas:33626.6}, noblegas:{total:33626.6,gas:33626.6}, water:{total:0.2,gas:0.2,liquid:0.02}, he3:{total:2733626.6,gas:2733626.6}, hydrogen:{total:15458068.5,gas:15458068.5} },
+                86: { water:{total:5485.9,gas:0.2,solid:5485.6,underground:1859.4}, silicon:{total:850.0,solid:850.0} },
+                87: { metal:{total:5.0,solid:5.0}, silicon:{total:6000.0,solid:6000.0,underground:20000.0} },
+                91: { metal:{total:5665.0,solid:5665.0}, uran:{total:2240.0,solid:2240.0} },
+                92: { water:{total:29622.3,solid:29622.3} },
+                93: { water:{total:38061.4,solid:38061.4} },
+                94: { water:{total:15618.3,solid:15618.3,underground:45618.3} },
+                95: { water:{total:1400.0,solid:1400.0}, uran:{total:30.0,solid:30.0} },
+                97: { water:{total:150.0,solid:150.0,underground:12500.0}, silicon:{total:900.0,solid:900.0} },
+                98: { nitrogen:{total:10000.0,gas:10000.0}, water:{total:8581.7,solid:8581.7}, fuel:{total:4225.0,gas:4225.0} },
+                99: { water:{total:4.6,solid:4.6,underground:8230.0}, silicon:{total:100.0,solid:100.0,underground:3000.0} },
+                100: { water:{total:40.0,solid:40.0,underground:6000.0} },
+                101: { water:{total:55.7,solid:55.7,underground:2100.0}, silicon:{total:30.0,solid:30.0,underground:2200.0} },
+                102: { water:{total:600.0,solid:600.0,underground:1400.0} },
+                103: { water:{total:510.0,solid:510.0,underground:2000.0} },
+                106: { water:{total:640.0,solid:640.0}, silicon:{total:4400.0,solid:4400.0} },
+                107: { water:{total:230.0,solid:230.0,underground:3000.0}, silicon:{total:1010.0,solid:1010.0,underground:10000.0} },
+                108: { water:{total:6200.0,solid:6200.0} },
+                109: { metal:{total:700.0,solid:700.0,underground:8000.0} },
+                113: { nitrogen:{total:767.5,solid:767.5}, water:{total:1712.2,solid:1712.2,underground:15000.0}, silicon:{total:3700.0,solid:3700.0} },
+                115: { water:{total:1800.0,solid:1800.0} },
+                116: { water:{total:200.0,solid:200.0,underground:2000.0} },
+                229: { water:{total:12.0,solid:12.0,underground:11000.0} },
+            };
+
+            const ICON_DATA = {
+              nitrogen: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAC7ElEQVR4nI2VTWhcVRTHf+fe9yYz04puWhBEtCABRTCTjlsp0oUKisqkLeLGhfVjJRVcldidSEEI/UBwaxIztn60oCC0uOhCJdVNXWl2IiQoattJMvPe/cu9ZmwzeQn9v8V5nPPOx/2fc+6D7TAtF8Xkx+q0z+lK+7y+n5jVK7fb7hidBfkUbEEH259L7c+k/eelxy9KEws6dPs3o6jMtHwNi1KB1yyDcp2++gwIyOD1aOt2UJWvYyeIfhQGpiTSS9jJxVUp9z6ykT3jjAbIcnLnyXAYYiaaOt3/EoyiUpkgGWaanNVBq3FWsJsBRxeP2BdD27a+lZBsSHxrXh+15vRNfJ/8UDmJymrYjtUt6G4yXqbgLRxjznjnhxeZTUxuU6VtCRZn7ISFxz7VQ964kDUZL2+mBuF3QXGDr1Zh6udr9HgXjQatbEo8lh8wlzUYL/6irwKpRMXf9PN7eKoB78ekne5W/00VRs66U1ZOzuuAb3Kp6FGYkd2iAuERJWul44Gfpmxl9OibMizv2UgQGMdXzJthlJjlND08mIrobo7hhpVNS25lBZc66/gD4SJDIyGTRiWBAf/Eb5f3YNF3OBFW1a0nppVdf5gl57lPJQUiSyMtCt+kVva4tHjYntxyAslSBa1ZPe/qHJUIYY2zPuN+y/kAR24OQlxAA1dLex3M0VPB2ypYdnVeNUPlGmeuHrGLNjGnQ/ku5oeHU5kuhUKB4wy4ajWOEXhUpL2+YgNOkvEsGcfN4c3f8it6PGeteX3nx2iHdQoZIWuSlzc5t3jYpv6n4LJ2/7bK4JenbX2oa32iL32DZ8o4CbEZdfLQ53LkZvgkys2lK8BHkq//Tvb1nwy+PWA3hs1b2ofbt0T4NSQ6hh1OESTk5HhPAbkxcl+nFvoEGafjPN51L0Uc4NQ4ZFEXg0VpjlMqwI9Rcw1ylZQyTibmJub0gq/zZlwvrTOTbpSNFdzSyYgNW/w9WIM3DIpilZkfX7IL/wJJTmGXVR+b0gAAAABJRU5ErkJggg==",
+              oxygen: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAD6ElEQVR4nI2UXWhcRRTHz5mZu7vJ5sOPpFp9KEXRktZ0kxQtvlR9ipKQpmUXlagFHxJ119CGPm/yIAgtSrL9sH0Q0UJg19BuDZXiQz9EtOImm9BE0Ih9UKtRpMluku7emXNk7mbz1RY8cC9z5+M3/3vm/AfjDGIAgQaHtz/mq/FFjYFnEVGghMzSEp3s25+dKM+B/xFoX4MjTa2BoPhMSqzTmgEYQDoIZDi/uGDeObg/+2ky2eCbqq8nuHyFBgbuDcehdONWIeSE4xPVhSWjrTo7wMyklFBCIuii3hHtmJgqL0omwzIcThGi3Xp9KGDRHaiQ1Ys5rVGgWtkJUWhDxhFSAuDw8S+argkJ0wXDo5H21M92TjwOYqNagQgNRjOjbW0MRsHETAAPEsGiMdAecOQ3H33ZciZ+rKHKwuJxEOuAzHBTCETiO9RboglUCgbGy7GO8d5o+/gLxYL7DCDUPbzVnz0y0ripvx94LVQIkB+7LoEUaOG88gCbUo6sdhyOX9qjBi887n+3Y/LXntZMKzP+4Jfiq/7+0sGuAKN7M9dMkQ77KyQKAawcRKUQAwEpq2odJzfnfhjrGBuF565Q70szhXASJHNcvN029jIibq5raXrD+/VLe7z8C9uIdWaPFvKmRyok4/LvzPyn0fT1Qs509XZmD3nJX67DVARM9+lRCQzIBCeB4E3bv/3vTV7OPKpdoJFmycVfRG1xV01FlXht9/fzpfKxB756krZk6utn+TQCizR8y8AHbF8kkjK2ODyglZw4J+4DABN9fjpfBqVSYYHoTYRVeOl78MLTNajdWiIsWNhyCbEqSxWCrxvCzUcuNga3zD15GyBFy7t6YRdYpYnzoVeVwh6j3ScAIKgcXEikm9tsnq1Fca2av/wzN4jp/d69E8eT1xt8kR3TRQ9W9vvZ0Ac19zsH3QKBdhmISvkIBAXk5/Th3s7sUQ9YzsFQummfQPictdkW2zf5k+2/WTWu/q141Dxwa/7F6lp1fiHnugwgYNkKbH0vvS9Brt69UkPhZFimIimTSDf1Oz7Rxwa63mrLpMvjiXToTLBavZKf14S4alEbxGwqK5W8vahPrSvKstJjo80HHIXvGeI/yKWrDHiDAQ4phVuMJq/YNzrK55eiWDCj6wYszEKjbWOf3Potvw0YT6HEhxChHa1zAPBuDmUClsrz1Y93XghrlK7tS5xtecoJwCQZBq1p3TXnD0jlupQjMjvvCixNLJ38VP0sPlKdx+5dGXfoXOh1n1+ekBKDxpSkKoVgDP9TXOKuWOfYxXsCN4b1sLXd0Ehop1Mheoi4GQANSvhuKccn+iLjM7a8/gN3gwE70exo3QAAAABJRU5ErkJggg==",
+              co2: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAElklEQVR4nEVUS2yVVRCemXP+1+XSSwtteWpCeJQCAhFj4gYMMUETFy4guBAXjdEQRRuIBk28vTEagkEB27QQ0oWwATaykGhMtGxMfKaIEEEkqaCF2wdtua//cWbM+e9tPZs/+efMN998M+dDaJx8Pk+FQkEO7nu5XUf6kiTKNwkAuQYBBUDq9xBAkAgAMWSR54+cPv1PPp/HQqHANq5nAddfv44AwFSlNwI/u8XkxkEHBsLxLHDsAGkDYuEAQJgh8H0olUr7AeBtGBpSNrdR8H92h7q62pjpZsumO9l5q/8VRMF4OgPF71dDUvIAFYMwAtoAos2tGOa1Hw8Ojs6ypLTk0JD9SlTVbzWvrDRlO+6wJEqZ0CGnuUItW0bIhI5wrAAJ7F3FzOy7bhYQD9jcRoeAc+z272lLpnI32p661RSsGAOJdV27tEeA6M5ymBnJQel+wNpNiViWAAAlw9wxy9IG0qApB91B4OZARwYbUswdBPFW3f5i0barI0ufvEcmIgYEZGbju+58BDhYLwtkOeC7XV1tQnBTImd+bvNtyHWMoqk5AiSsFAAbqF398onmdc/+MC+TS85P/7rmmfvDraz9BDHlA2Wr5ZHBwVGya2CY9weu18SYmPJIqwUD7QpqhSrX7CpgObXk5CnT/cKVqVI0vcdfebfo52IUg8DCxvc8q2W3xaJDXV3tqNRrtSgW0qzCiaw8/GMZMCbjiHhrajL8xF2h3ukBkPz5TvfAzruTFFTO5VZUkBNlEEGFYSgK4JXuvXuXEYsUXK1b7NTqaoHxAgXaj9+7l8mue/354QOvbv0lRgRpyT6SaquC6Gc9r2bHAjaHRdhxnJzW+gMSxCgdpNSj9pASIIJa4enLyfFLO71GIXzzua/C3vOdWWJqTUK7y/Uzm0sAEVEUFaI4HlNK2Z/pG0vKPkRVtdVe8tvGOJ+3MwU5fnHzIZ0NbiRV70PxZ4A0axAQmxslyWTiuu/T4TNnJgCg13NdFAFDjlHTf2dEKpk9n33TsdC2u379Luy9uPnF3ALnI2ZZKon2sqvuQ9OaUTCRNr7n2BXqPzowUCS7NhhFfbVa7YEipVAJ1GYcqd5e3qpJnTv53eOLdu++YFhwXxwxJwnHIgKSEGQeHRfHY1WrhtPsRicsFvXk88qyNCK9nuOgMBjtGypeXcTlayt3xKXkt76vN3yOJBuimhAi6tRyGEF5kQmyhInB/qMDZ4sWy24lW2QVBMerUTSplFKWgHKY7v20mMeGNi6p/L72Ja56C1g4fXANKxMwrqqUzRQn+lOLkbqVdYiebdvU4b6+CWFOWYKIsRnKM1SZ8GX0x/Zk5s82UX7SmCuC8iPD4+2YlJz+o2cHihZjzm16Ll82af9xfKIWhg8UWQcFIwyMikVnq/TwrzaZubGYURlGJzHVkXYqXlk4LQqOpey2b0/9MAW0ksxqKQDHMkFARKQcxyFHOeRohxxH08zwahof2kRj3z6mysMbKYmo17K7sGtX2qnFmnPsnp4eUygUkJj7y9XqDhEJjEk7r5fEul+Xx1xAa4pOOZRM0muD1zo7Gz4H8B+bV2w8xRptVwAAAABJRU5ErkJggg==",
+              noblegas: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAADsElEQVR4nI1US2icVRQ+59z/NY9/WlprAqUIWpqSmJi4touAuFY03fhATUnE6ka6UYP//CruxAcaa2qVUlcZEakbcVVEN4Im0zxaaCrYgFAlxs5kZv7HvffI/TN5TDOCZ/P/3PPd75z7nQeOzY6JysmKOjX32rCdL7wMWo8wQg1Yf722sPix8QEDgjEENvi7BgdfYsTHkKFEBHPNRvzhFw++XTW+DDgxFzxq+85FElRUiQREBOHZkNSj74j12KEBaBrc6rVmwdHFrxzfe0RFKTAzCMcCrXQ9bcknZwaDb3H8l+Co7VFV2CKfRlICsABABgBZ7PGdjVv16Zmh8mlDOHml/Gmhx5/YuFVLAVAAMAKgsnO2JRO5oVIawsmF8COn6JyO67FEBAu2jIFBELPWaasZHXZyaNnkrgIisWICbMsAAMwgXd+zknr0vsXMD6lEGZVom2xTL2Ql2S3lXQHcpwEcx/fs+HZLZZp0Ykmlkhn5hIUMbpY6M8AeHDISsmZdAJM8ZlJ0NzYlgzwxwgoJwYiou2BQtlJUmn5HTm/KKEVzdicOAZiEoYIVAuDzQGgU0WzKtiNM6vouyTiZP7wOv/UMiRsySqtO0SXj2wkK2tw1HEjwGc0Mhd8ktehC4e6STYIwI2UAo5dKlRQoJsLRUIYYSrLgBS2VtIuebTAGS4Rk7iaN+POz94eXMAgCWi4P4MGr194hgc8xwyHWWpElfo3rjVMrNWe5r9cetgjkdN/U/PPzUyNezjunlR5GRIGEf2qtzvcc11Pt5+/Y+GJwwPPz9/JG3JoeeGNpcqE8LlwrYKWPGDFI0PU0Ss+ceyC89OL1NwcQKadtceOTe15d36Xn5neMZ6mCJ9WWY6IaTBV6S29F601QiTSCm+lBO+9AvN585uxg+eIWdoxnxdbdjgyNAyoVONDf30ckFplNx2R1Eu0CSGELoVN1O0njYxsjI3/3wxKHGG53SEcz919eQrMMEPBxu+iiVlnVM7J2dEslSrm+t99x3IezrC53cnROR9u0hqOgt3fMnqYzDc4Ax7rdpW6HCNzoSrabFCD634TM8GM2/HrP8Gy+IFVmOH4y/8t/LXeMY2cebPYWw9PVM/kC+VW35N0X11opo1lVWSSVP1i0W2v1H3oHcdQc7S7I3gwRuAxl/HL43YYifkLGctXZl7MtxyLLtcjbn7ejWnSFUD0VQshQ/i817rCAAzKRn/359SO5fd4roPkEAKRI8H3jj7X3Lox+8A+z2Sd7t8+/nU3CNgjSx6YAAAAASUVORK5CYII=",
+              water: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAACeUlEQVR4nKWUT0hUURTGv3Pve6Uz4x+qReA+UOiPPgZbJUWrIFpEgkMFUtBG2khRhFjtihZtoqCFbWLGEaLC2gSF0Kp03JTUpm1CQaU2Wu/d+8V9M6Pm2MjYeVze47xzf++cc8/3gBrW84qeu3dmeSXI89KKj1JrX01YMMrz6cdk+gnZlePl+N1w6V3dsK48L3SPk0GekVvdz8kgx+urY9aaWutwgRMHJerM8aKXwM2oiAgWyq1wHpHXjKEgyyEXsx5U1oMFOQ7qFG6ZEkxDynEEKTB+El44h4FCRu5U9lQBV8HO6hTuV8EqRhAaVvnQURHHpjPy9ESeeqxXzDKw4tj3kEf8BJ7ZCAYGqgq2YlZcsYKiLGH/24y8HybVNRGr3IOD7clyl25AlgaEiVG1RkPZ36AopKyPsY48U6XsKWpmDBJM0vcVstpHsw1hIdWHVdV8BW2WEHkJtDca3HPZ9VyFjrMI3Im24Eb4HZEo1DVjJCK/CV74E/2FXnkge/Ns84h34qGZ4Yal/qufQoNvNsJupQ3O6Ea02hDcBKzST6sbsE15OK1E0EMLyuZgJZO4dMIiXWs06jYCvxSI16IhLsv/IYlACLxQ8HHXLOKr3gpNN4H1siwiLxmrZkb9wKiaOi6fadDvJs/JyQXE8to4K3eFOgHPRphXFienzklROdkV+mTcLOAoBLN+Kzzx477acsZ2ebHsIyhbIF4LfBp8COdweDIj0051f2m5Y4Q7k00YJNAnGm2i45JKOBcpsUJAA1iLTyBGFmdxe2ZAFiqM5RNe/cdIP+J2CxwSgwMk2kHsAODG/gsUPgKY0It4+eaUzJXKp4KI+yz+AI/kRyMLDQvwAAAAAElFTkSuQmCC",
+              he3: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAEXUlEQVR4nHVUXUwcVRQ+596ZASrtghSMtU2MoS8Qa8oMP/0x0F81avTBRYWWJqbaxqgx+mrcbuyL1ZrQBxOiJoUObLOrL2rAiNoSZHdZdiTBYtvU9CekoYYSGigsOzP3HnM3brNQe5LJvXPPud89vx/CKokGo7w11ipGtvRUFRcVvymBWnzyKxGQGLIZRmzwVvb21y/8+fZc3hYKBAv3FCLEMMrR+r73DDQOE1Hald4gMrqu4Ihos8H0PQD4lI/eqfrU69/8H2hOKBjlah2x7O5UfWTY2RqthgdI2ow+mbIi4wnLPqX+zzWHtPvCVGvC6v0iYdoD+fNzzedyhmnzbJ3TGDULz1REccseTpj2R4UYLO9y0rR3AcDeJufK8wTEuswuvWWoRYyYPV9xrjmMMJ0w7dMzVTOUNrt0AoIFVz6LCB1x80xdMNYq1T0WrAmSQpYIHwPhhwhhOVB9Sj/iHPGSZmRvuV52OCOzMiOy4mGj7NCma97LlnPEu1I9YDwz0bEIxEIAEEYAigVjyI6Fj8GI1b1V1Web0zZIIWIlj235L8nCBCAfgAQiSiGFT0DblWY+MCUJQixTejmGyNYPW71PTMYmiYUhLJH4PknyF2V4/vx5lk+0BHaJIdfUY0QkDW5oSPi30jnKtrmF7RoK+5JoGEjuy2El6/p2c87OEtF0ltwXdzodU6rn8oVJmLZdrgfa1cEdb/6nbU77c/c6AwiTjZEqJqCfI9/oSfdVTaLs1FGrLOVrKue8Ox8g4Puj9d0VDEqOMsLyRbF44o5ciBiga770+UTDd6c98q8vFfmd+DvOJfzet8r0QN2izAABfqYhossAARGBELPqZZ9Y/yN6aYOr0sfg6Hz27kbfkI+XG4FxVd0ybR1kM7NPA8AeAHBz7ZKbEfQxWXemSeP6twLoHwB3vw+8NsBLh+b9uy4SiAqjrGTWmztBxDaU62sPzHkLy4jAi5ihL4vsFsbpBhAf1IA/StJ/hTX9cTDpCu9zX4ofG8cOzQLhBkkSSI0ioiakVG5WAFKxJBKAwIkoN7JErLIpdXBeSjGc9bOheqc9xUIQYpzzQYa4RyXZJzm0JDILa/kanQHqxbxIE0Q/ALLYGl7MOTK9XF+nZUX2JtdEWjU5IO4EYL8pLFYbrMXGsbZJAlqKm30vNTsHp33yX/OluGgw/db08u1PdzoHvt8+1haddmc+0UG7lpHLCcEwqLzz6KF2AJjaMX7ghsLKzyDGTXtH3Oy91F/dWaTC6azuLLrQHC29nxjSegFJBOKmfTnZcKZGRacafQU5xK2+43GrN+d6vs8u1EQNpVefeix/Kdp0siRh2aNxs+/dQox7kqeguGl/mbIiY4qiHkRf42a0YdSKTMQt+/gqBlpBsPfYOmX1vaEz4x0iuuyB+ysJvCoZMY5sswHabgLa5EnvZKPTHltNsCsAC0EHza5ABSs75BPtJ6D1RCQ05DcB6eerixd7Wv8Ku4qUcRVb/wuz+kw1TV4a1gAAAABJRU5ErkJggg==",
+              hydrogen: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAADTklEQVR4nJ2UT2gdVRTGf+fOnSQvtcFaq4ukG/8UDQpJ5gmp1cagC0Fw914a3NiF4MKNBheuQhe6sVUQLbgqRZqM89wIbopgfFKaWDNpRUgXUkO0EkgjRF7i09eZe+ROEk1J/dN+i7nDncN3z/2+b44wroZj4npOaKn7UXoaqyzOV6UVfaKHRDiijkgdewHE8IsYUhyTsxU57/cqiQa1quT+vajxj/4JfT7o5G0c3driihgW1HI/ynnNmTaOq77OGXpEOCgBT2D40bQYu1CV+aFxtfVjkhWEfWf0wcDyXdBJe/4bmA5A4fo6By69IN9zEwwmWspCXgVe0xZj6Yic3iK1QcCzQYn2fJ3rCKFr0jK7MIGlPDSlC6Umwe41itM9lvch9WFpAm8NJHpWDF9EHyv1ETntr29xLLnM94SqknkNRLDkrNSHJaskqts12oBKb0I4V5W0L9bDRpjpS/SbWoXLhgafuhYL4V202U5suJe2fJ2zNPjSG7aTrFBKvXG9ibZdOiLfivKmcXyAiEo51sccnDIBExLysMu4uNLg5OJR+R1V8UU303GjURVqmAeWsF33Mi+GUYliPem1S0fkJW4DQ1NqvTRRoh+iZFYhMsL7/oM3oFkirz9F/q+dbcM917z+KgLnnPKKEWGPOq76U7ybfv2/ZH9D1MHPAnuMp7+dq+6gdIWialBWxdDj275VEp+7xh1YvwL7PZcF5tTxJMhHy/tugVRValJEqojVQKyHBVIrhlMoEz5T9Wvk/xmVTTJfMxDrYNDOfS7jCo7HMRw1aVUuoCy257xOVfIoxXf9z/DTyZNN6nt2F9NiOBOUmEFZSivytfjT+mMeEiF1cNAnP5rVMC37//fGTrdGVTnWZ4LdfJ6t+xvhxGDV8asIg7ZSw9RG5XIU68tBwFdRrMNpWeY8gc/mRs42sLxOODSlsrZMpJDhUP9TaEZuStyZNekrTNgaPQOJvmjaOI7yjv2Bd2fGiqmyA1Giz4VdfNZaLQxRY4sOcTm9f7m6RVqO9RE6OIHSTc45zfCT+afNsv2EHCJncNPd/qAD1JHlf/DG3IgcvyEm28d5uabetVEc/U652+8ZYQXDRVpMzo4yXY55OujiQLbGbGHuuJo/AdOBlAQRG7UOAAAAAElFTkSuQmCC",
+              fuel: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAADsUlEQVR4nJWUXWhcRRTHf2fu3d2b3U2a1CLxAwSFQpEQbQ30qTXSBxHBpwQEUaQKIuKDtmmLhiQalWxC/agKoYq+iBDFB8UXLVZBRMWamsSoYAQRRBDN1+4muzszR+ZmE2sNhc7LHc6d+7tn/ud/Dlxi6ZDG4Tlb0ifmSno87M+mMRUud51twmbG9dGfX1RdeEl1ZlxPXPjusmGz43r015dV5ybUzo6r/e1V1dlxfepSULMdrHdE7HclHWhrobS6hvMeo4pZrmDb8wzOlHQwnNkOKhdrJiNiZ8b08R0FJsrrWOuJZPOUgjG41oR4qcoj3QPyymYC/wNuZTamD+wocLrShEUGIoMEmPWoV4gNPpchWl7nrn3H5H2d0kj6xW0BNwPfPqt3tOb5sG5xThED2pYnWl7jQVWSjgKnlirYkGgmSvWqVuvsv/m4fK9DamREfJxu+sWdn9DdieFt69AAE/BteeLFMoPdx+S1tOIl3dNR5OHFCrZhkXyOYjbDu3ND2gNUVVVkqk+j6w9hcit8Wcixt7xOmnp7gWi5ymTXUXnom0nNrP6Ofgq+r8iZQkJvKFa4XHuBeLHCW90Dck+QLb3ybEkHdrYy9tcqVkAKCVG1xhc3XseBVOA+PMMII+jsM1yZSZg2hs6aTR3u2/PEf1e4v3tA3pTpUb0mzjEXR7Q1XCo4RlhrWLq7BmRhU5v/aP2cHiomfFR3G0XKRIh1LNY9XSbKcLiY0N5o/q2QYGoNTgZYeoUmLK1gv7gQ23tCzqzVeb6YYFC0YfHFhJ25iHuDIQ46v9GcIsQrVWqx4fWhITVBs4uNeyv4kHUmYrKyjhchCnEfLOXpMUYQ1X+9HcobDg4Po8PbdNK5q4lC1t6TD/7U1O5bjq7FDj6PI3pTqMcXW8ihDIvIYQieU2GqCe4LGUmjCXg6GyMNhwufhmIifCzzJ/Uq55jJxuyqNXAiqb9MvcF7kTK6+4hMX5jhDxO6T2E0yXJ7uYZH8a0txKtrzNcr9GzYZkzvbEn4wHqoNwh9Ka0tqXXwynmBBQ/WwA0i3NKShXINGwpSyJFxymrVcvCmIzItU1Ma9YdOCdAspws5OsvrULMbnkwyRJnmTAm2Wq9vGDqXIS4mqd4/Lle4r+dJ+Tq1WDi4Cf1qSDs7OnjMee6ODdeGwWAdGyKRDonUp+EmzvEL8MYfK7zQOyLl0HH974jbmjab0LCfP6VXGMdtajmgwh7v2aXQiIQ/xfCTCJ8tLfHJ/hFZaY69LfP/A6Fc7QLs1TuRAAAAAElFTkSuQmCC",
+              metal: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAACgUlEQVR4nJ1Uv2tUQRCe2bf73v1IPBAEqzRa2VhZWQRBEAUbwWBIEMRGSCEp0uaIFmKRSkEP7UyMnE0sFFFQEAtjYSn4ByiCEIO5vLv3dnc+2cvFi97B3fnBNO/NfjPfzuzHi/fXnhltjjhvhYQUdQAWXxqrqLSxvXLj2vTtxXurL+K4MGHzXIi6eW0oEq1j5fLssyaiY9qYoyAQa6Y/hCKkWBG8/1it1SeM0WcBIW0MUTetDQDt79ZmUATKnLXinHPWWmlHnnsQofFr6/vNudm3EDejjYG1eW5dJ2dfuN3DErgUcbtekKC4E8SEJCmGTl52erjonWMGRXs5+4O6wUFyL0AMCLPSj6p364eVpuN51gIxRzQAqocLgNY6ajbTn/T10DsybqpQKCkQ/CCyvoTE5E1SAAOvlpZOOQhdct4S499R9Ifu+bJ7kAm8Un1QP8iQEzbLiJh7i/fB30kAokhHzbTR2LSV1yRyoVAsa4G4dpFRCcHs4yQJZ9/cuX4uAzAt3u91Tf/RoTArFUa8uvBwfZyZTuZZRsx97nowIUhFOmqljWaj4Z6XfPN8sTSWiDgfLnBkQkaQWyDx8n554fIOgJnw/IgVhiUL6JpB6DDIZfV4frleZFKTedYK8gcucw9h2xiYdZbu5NRqrR8YkzPFUrnsvffhB41MCFCcFNiL31iav7JFwCwIocpIcruSAYq0DrvxpFarGQJO51mLaUS5tPtSICqKJGumksfm6TdXmUxKxUorTW0wg2BjQ/AE0w2jFcXESXm8orzzn25dnfoBkbmw3NpoE8exGiaMaSeHBS5pgDacd5vMfB8AV2trOm1sf3DWBRMbciBKELwR/OU3nk9ZDIXX7WAAAAAASUVORK5CYII=",
+              raremetal: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAADUElEQVR4nJWV32scVRTHzzl3Zja7m2Sximis2OfYxKKCIKIPIhVtkZqmAbPTxoJ567+Q3dkQ3wriW4sPxU1FsiQP4k+wT4IvBtRkG6QRC7aB+qPGdTPJzNwfR+40s7tIYtvvyzD3zv1w7vd77xmEXY0vjIvh8WHcfTUBBmZ6edq9+OxFWW3654hxZ2bkww+ysb2+h//TheVp1z6rq77/7s9v89y1KRX8UB6zYxa63zqscIUsvdb03/IK7gvGcE7F6peZJ+tz1aZ/pq/fuyS3pQFEdDyCJFQTldF6I1g9XXP7aIhcSuJ2cqUyMr9oWQ4AkC2ZAV9+8NDg2d/WN9uOx09Xm+XJfL93KdmRxhhGYAaNwF7RWQhWJt80wiwYg8sPHRzI3frpLwkAi5ZlYZnczZvt31t/bD4Whzia78/NJ5HSRjGmIkSjDGhpjFfMLYHmIdlODrZuhX8DosggaXXp3oHXb29sPTdQKr1SPOAtJjtKG2nIgroGIWlpUEtt8v25ryjnPNO60X6emW/a6TVY4/TjTppX/Yl80fs4han/wHrEhlm4xMIVJLfl8ZmR+qcZA3uOxpnUs2iPyu4CTUJ5ygZlWemi2srpsjfo1qUNwHp2F1iXyoYcAuESRtvqZDBSX8LZpn9O9Dnva2m00Yas//cE663UQSZBoKR+hxgoZsMa01zgvoXpKkRGUMgUp9UEq+Uxr+A2tDRsj4ZN8z62jMIlHYXqjWC0/jlZI+0ptzfAGmw9sdu4Vxg5ZKK2OmFhnVCypIPV8nGv4H2iE220MvuH0wOTYXK08tTlKxWuOAEGCm3XaJxq6FrTn91pqcteURzKl7wvVLQPtAsDGSYvyVhvOQX3WPVwfXaBxwV1WhDi4weeKH6b8/C7sCVfFTlB9pxZwF6VxVvqRQNwfXBo4BtCeNhOX4XhrvkMbEqPFh8wgjbI443oHzkmXOp62hNAvCWPkRCx1+feKD1SKALfub5WnbsMhj7783rrPBJeIIbXgiP1pShMJu5AkVEQCod0tK1OBEfmvwQyR4Hgvdu/ts8z89e7vP2bbNZEKz9Onpy7NmXm1qfi4PvJ13vn9lLH8N6WvtZYYxtUln5txT8LBNHM4fpH2ZgNwHqWVZb9Av4FmxPsMdQp0LYAAAAASUVORK5CYII=",
+              volatile: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAADwklEQVR4nHWVz4scRRTH36sf/WM2q8GLCl4Ek8P4B5iDkCEoiOLBwwRvS2ayURCMxtmNxmB3B4xJdhOioobdzQw5CdmbYKIQ4qwn/4ENRDx6EIyw+bEz1d1V9eT1zITRTR4UXVX9+tXnvfpWNcLYkiQRWZZRZ27uaaX190AUEAAQAMKUYTUFiABD9P7tL3q9O0QEiMjzoB569vsCACxK+f5MHDeGxgAKntpp5D3EUQT3Hjx4DwDSNE05jh0vOKJLs4wWRnS/I2LNew9E9B+6h5SIJIQA7/39SMo96crKPzCmHCH0+4JTQaU+ioJg1jnH+HL8vf9fY5PsE4fh7oG1H/C3aaNR+eOkdieOHHnGe38bAHZxTZhOKQWBUlXRJukUZQnWuRENIq9wVzi393SvdydNElST2rmy7MRxPDswhmshtFJQWnvbWfsDjWkRwAHAW1qpF0pryRH5WhTt3jbmQwQ4kQBI3hpcbLWelUIw3QzTcWqB1tIUxYGlbveX6fp12u3XalpfN2XpEEAwJRDdK7Teu3zp0t+Kh4sAx6Iw3DUYDi0iIgfLy/JXDpY0mwHU66Pa3bolssuXf15otX6LgmBfUZbOeU+1OH7SGXMUAT5Vi4cPP4dE83meEyJKGiMiYsbPFwHcwSzjVOFqs8mpExKdQsRrlQoQRV4UXM93O3NzXwsgOh1o/QSvxKmGQcAOP51dW7vZbDblwfX1Khgb93kTz/V6102e32RfBPC841qpp6RSpx6p3MnpqNfrkw3eIUV4nEYXRylvCsRZP5ILRUEgijx/9Uyvd+PqFOWkv9Buvx4HwY95UbBghRSCT8+WtbYuzq2t/UlEq2EYIhE51hdjOcSEg2wCyCRJFDfuMz0SfTYuNQCRC4MAPcB3y1eu/KUq2QBcMHn+jhCikg3vXhQEL388P/9Ktrp6Yzol02q9EYXhS6YoKtlIISA35q7T+stqsWT/fpVtbNjjhw6dj+P42JSw0Tr3BwFc4/HUMXxTS/k8C5vHtShSQ2POnO12P+EsFDQaHjY2UGq9bIpiXghRHb3SWlRS7tFaH50mLMuS37GsQCDKYVFsCaILTJcC+NFtM6ZcaLeXZsKww5SIqIho+kKYmEBEQUSW6baN+Xyp2z05iTFKpdFgESJZe94UxX0pJS800R/7TDc2xz7DPN+qKXWxouv3K//KIcsyv95sCt4l5/03tSiSUgiptRaPavyOfYjoYraywreM3HFjb45EjGWef7UtxL7qF8CX7GN+AduDwVASfcv9NE1dllUnFf4FEgULz1GFKRAAAAAASUVORK5CYII=",
+              silicon: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAAD1ElEQVR4nI1UTWhcVRQ+59733n3zMpNJ00JFEEHoj7UU/GtRRBe1gi6KLl7GpGqkMQGhIkUEBcub1wi68yeIkFiKitZk0AqCCl1005YWF1XQmmShi6JZJROTTN7P/Tly30wk1hD7wWzmnvOdc75zvofQQRiGvNFo6L6h6F3PE/cqpa4BwiwZmEGA30WX/uPj9+LFdjQhABJsAGyTTfFGo0/Xhuo1UQq+0EoCY7wI0EaD0SpjjM8T0SXVXHiu0XgniaKIxXFs/kPYeaBwJLqNE/+RMVY1WhvAdjEgYsgYAiIIEUCarHyrF38+DBDCnj2/0I2kbG5urmiFEzsm/GCLVkoDgmP/Kn6ISBZGU7K6LIUfPMF69n5qJ7JkYRjyfxE2m4/aCkQA57WWUHQDcKM+VjMLN0tWlRCl/v6R0dOHj75asbqvSVcQ2krh8eOlyYnoO5mlkfADhwhs0MZAcPI0UY7rPV/2qpf7huP7bTtWuuLZLoT3XDuPgK0zE9HjteH6V8LveipLWgoR7ei2fwJEA9TunIA4AplydRtfXpq/uPtWevjKwoJ7oLdX4sDR0ds10zNd5apotf56c3KifqJ/ZHSaO84ulec5IHh244zzYvOICForUDJvOY77m8yztydPxZ//M0BtJD7IgJ0jY5Tnl9wsXX4yMekPFbdnxvFEWcoUjNbzADgLCFcR4QoSXN0qqrNjYy9nluTZoZN3kid2ZXLpJ6wNx8c81xuTeaYY5wjIJJHep7TsDoLuHalML05+eOL6WgcDL751B6n8bkDcDwD3AcBuItpeCsp8tbVywQFDd60t0WgNjuf4UsqzjY9G9x565pXp7d3bwoGRk/sJ4B4i2olgtrh+UJDbeK0VGKMozxKNSFsdRNxnyNhFoaU1WhMS9lh79frx977f9VCWJUBkrGNAK0VaSQOEZI+fbB5aG6IVWNkt+utuQrue4FmSnB0crFdzxh9YWV5UxZUWziFmR2kndzKwOOK2WwiQGYJ6kVC8knUFEtBU5vLHPBHwDlnHOTZ9c7CpU9E3SsmvPeHb6jxLk6Uqu+Uygekno9d54P9BAMZeNzJGryuZZ54IFACdazb/tLoclCq3YfymyAgMAvjskSjiZ8bjaa3lB+VKj4NIn7BueNATQYXsGm9iTAAwjusyIrpgJS0SjrxUr1DmDsjmzglW/XVc+P5gnqWaqNBvs9608AM3T5NLK8wc2rB67YX6rF/q2iFlXlhtszm544CS8joSHPhs/I259dUxjCK3Ecc5Q3xfa/W00dKeQ/EV2RCIhBpVlmevfXl6dM5+aP4GQWnvx0c25ZEAAAAASUVORK5CYII=",
+              uran: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABQAAAAUCAYAAACNiR0NAAADlElEQVR4nF2Uz29bRRDHP7vv+bl2nASVgEBN1VCUEqGgIiUSR/4EQAho71x7BPWAwqHlUvgL+gdQfojyQznCoReqoFT9QUGp4ziJEodQDNh59rP9/N4Omuc4uFlptLMz3/nO7O7sGkaGCJ4xpKpvt1mwPm+kKa854ZTarKHmeay4hO/PjHHneMwTQx06P/iLud2Ym9sden8KsueQnf5AVFeb+nZibiqWkVgdZjTLWsh743luGA/T6WR2zWxMhsrW2WQMXqEApMhBj4tz43w55LBD5bcG754u8UXq+CVqcQ7HTxOlLLPS2EMRtQn8qBjnWNEYjVWOrFIRzHaHF+sxvd0Ot1drFLWMSpvFnR5JtU2y0cKpqK62SoNFxfxQo1jr8rPGKodyZXtYD1l+3KN7tz44/HKZfDaHXP9bkEpIX0X1cpPro5i7dU49jumWD1jOyCoh83VB1ppc0fXqKrmPBT0Ks9niua2I+laHWGUzoq429SlGsQBrIVeUQ7mU8JM/9AYjzsiAyNOAVRmAN1pc7gqiUj7gcpZUyCnmEGs3O8woh3KZSshtEZ6fnWDmyUYCrSaF704EfKPrbo+3u4Y350vsH8euh2xZw55vDNPGsPuwwUnfYhOHOzmJV2+SiOGSgVvTAZ9m1YY8c0K49KDBZ1OT+P80SYcx1rCPcNoXoZXPsyBCWVsj5yNRCzPm0x8v8lSzxQdHzQ+1yRLXTJv3oxa5go/o1n0PFwRMxDEVrbDm55hLEp622mn/B9Pugu9xbSNkSm2ex4ftLoHn8+xhr2fDOcjloBdT00tYUZ40Jen3kaEkfZJCPrPfwBCpOOFztalvFJumJJrAGla0NV7FsuoEy7AxBZcLMrJ6P2L23BQHai7XmQiKrFuPqX6cPVyb4Q1iDS52LNoXStxzKcuTRYw4kmwLgowF2DhhScnKQl5F9V7CkvoUk+V2JBqbpiy/VOKe9pKp9pgN4L4Tgn5COl4i12rz679jLCyA0xyD0xq86WqbO6Uir4Rt+jkfzxriGM6fzbN+9PU8Crmw75CtiHQvpp0dBfDVYfOqqK429SlGsfsOedTgQlbt8Bs7Im1wUYH7glQjlvTBH1Z2NNRWbbGkGMVqzCjH0e0Pv7GHdV6eHOdqIeCtWCBqs21gR/dsDdOFIjOBgU7Mt82Qj+an+H301x5tpye+82qP877jnRRel3TwLK3HloVbieXrs3nuH4/R9X/Q/jgLvy81xQAAAABJRU5ErkJggg==",
+            };
+            const RESOURCES = [
+                {
+                    id: "nitrogen",
+                    name: "Nitrogen",
+                    icon: "nitrogen.png",
+                    optDepth: 1e-6,
+                    heatCap: 1040,
+                    hvap: 5560,
+                    tBoil: 77,
+                    tMelt: 63,
+                    pTriple: 0.123,
+                },
+                {
+                    id: "oxygen",
+                    name: "Oxygen",
+                    icon: "oxygen.png",
+                    optDepth: 1e-6,
+                    heatCap: 918,
+                    hvap: 6820,
+                    tBoil: 90,
+                    tMelt: 54,
+                    pTriple: 0.15,
+                },
+                {
+                    id: "co2",
+                    name: "Carbon Dioxide",
+                    icon: "co2.png",
+                    optDepth: 0.04,
+                    heatCap: 844,
+                    hvap: 25200,
+                    tBoil: 217,
+                    tMelt: 216,
+                    pTriple: 5.11,
+                },
+                {
+                    id: "noblegas",
+                    name: "Noble",
+                    icon: "noblegas.png",
+                    optDepth: 1.0,
+                    heatCap: 312,
+                    hvap: 6430,
+                    tBoil: 87,
+                    tMelt: 83,
+                    pTriple: 0.681,
+                },
+                {
+                    id: "water",
+                    name: "Water",
+                    icon: "water.png",
+                    optDepth: 0.002,
+                    heatCap: 1860,
+                    hvap: 50000,
+                    tBoil: 373,
+                    tMelt: 220,
+                    pTriple: 0.0061,
+                },
+                {
+                    id: "he3",
+                    name: "Helium-3",
+                    icon: "hel3.png",
+                    optDepth: 0.0001,
+                    heatCap: 1,
+                    hvap: 26,
+                    tBoil: 3.2,
+                    tMelt: 0.3,
+                    pTriple: 0.001,
+                },
+                {
+                    id: "hydrogen",
+                    name: "Hydrogen",
+                    icon: "hydrogen.png",
+                    optDepth: 0.0001,
+                    heatCap: 14320,
+                    hvap: 449,
+                    tBoil: 20,
+                    tMelt: 14,
+                    pTriple: 0.0695,
+                },
+                {
+                    id: "fuel",
+                    name: "Fuel",
+                    icon: "fuel.png",
+                    optDepth: 0.0001,
+                    heatCap: 1000,
+                    hvap: 8190,
+                    tBoil: 88,
+                    tMelt: 65,
+                    pTriple: 0.15,
+                },
+                {
+                    id: "metal",
+                    name: "Metal",
+                    icon: "metal.png",
+                    optDepth: 1.0,
+                    heatCap: 460,
+                    hvap: 340000,
+                    tBoil: 3135,
+                    tMelt: 1811,
+                    pTriple: 0,
+                },
+                {
+                    id: "raremetal",
+                    name: "Rare Metal",
+                    icon: "raremetal.png",
+                    optDepth: 1.0,
+                    heatCap: 129,
+                    hvap: 342000,
+                    tBoil: 3130,
+                    tMelt: 1337,
+                    pTriple: 1.0,
+                },
+                {
+                    id: "volatile",
+                    name: "Carbon",
+                    icon: "volatile.png",
+                    optDepth: 1.0,
+                    heatCap: 710,
+                    hvap: 710000,
+                    tBoil: 4188,
+                    tMelt: 3925,
+                    pTriple: 0.99,
+                },
+                {
+                    id: "silicon",
+                    name: "Silicon",
+                    icon: "silicon.png",
+                    optDepth: 1.0,
+                    heatCap: 705,
+                    hvap: 359000,
+                    tBoil: 3538,
+                    tMelt: 1687,
+                    pTriple: 0,
+                },
+                {
+                    id: "uran",
+                    name: "Fissiles",
+                    icon: "uran.png",
+                    optDepth: 1.0,
+                    heatCap: 116,
+                    hvap: 417000,
+                    tBoil: 4404,
+                    tMelt: 1405,
+                    pTriple: 0,
+                },
+            ];
+
+            // ═══════════════════════════════════════════════════════════════
+            // PLANET DATA  (parsed from planet_parameters.csv)
+            // Columns: id, name, objectType, gravity, albedo, internalFlux,
+            //          heatCapacityRock, water, radiation, magneticField,
+            //          radiusKm, mass1E24, rotationPeriod, distanceAU, oceanDepth
+            // ═══════════════════════════════════════════════════════════════
+            const CSV_DATA = `id,name,objectType,gravity,albedo,internalFlux,heatCapacityRock,water,radiation,magneticFieldVisualization,radiusKm,mass1E24,rotationPeriod,distanceAU,oceanDepth,diameter
+0,SUN,Other,274,0,0,0,0,100000,100000,45383.51953125,1989000,1,1,3911,
+8,PLUTO,Planet,0,0.72,0.08,50000,0,1.5,2.5,1188000,0.0138999996706843,6.375,39.482120513916,3911,
+10,MERCURY,Planet,0,0.09,0.08,200000,0,30,15,2439700,0.330099999904633,58,0.387099295854568,3911,
+24,VENUS,Planet,0,0.76,0.08,200000,0,0,10,6051800,4.86700010299683,121.499977111816,0.723335683345795,3911,
+56,JUPITER,Planet,0,0.34,0.5,200000,0,1500,1000,71492000,1898.09997558594,0.416666686534882,5.20288705825806,3911,
+59,MARS,Planet,0,0.25,0.08,50000,0,10,10,3396190,0.641600012779236,1.02083349227905,1.52371001243591,3911,
+66,EARTH,Planet,0,0.29,0.08,200000,0,1,40,6378140,5.97200012207031,0.999999940395355,1.00000095367432,3911,
+68,NEPTUNE,Planet,0,0.29,0.08,50000,0,7200,60,24622000,102.400001525879,0.666666686534882,30.0699195861816,3911,
+73,SATURN,Planet,0,0.34,0.5,200000,0,900,500,60288000,568.340026855469,0.437499970197678,9.53667640686035,3911,
+74,URANUS,Planet,0,0.3,0.5,50000,0,7000,80,25362000,86.8099975585938,0.708333313465118,19.1891708374023,3911,
+86,1 CERES,Asteroid,0,0.04,0.08,50000,0,5,2.5,455000,0.000937999982852489,0.375,2.76797246932983,3911,0.3155799
+87,LUNA,Moons,0,0.11,0.01,50000,0,12,2.5,1737400,0.0734200030565262,1,1.00000095367432,3911,
+91,IO,Moons,0,0.63,0.4,200000,0,1000,2.5,1821500,0.0892999991774559,1,5.20288705825806,3911,
+92,EUROPA,Moons,0,0.67,0.08,200000,0,150,2.5,1561000,0.0480000004172325,1,5.20288705825806,3911,
+93,GANYMEDE,Moons,0,0.43,0.08,200000,0,30,25,2631000,0.148100003600121,1,5.20288705825806,3911,
+94,CALLISTO,Moons,0,0.2,0.08,50000,0,15,2.5,2410500,0.107500001788139,1,5.20288705825806,3911,
+97,RHEA,Moons,0,0.95,0.08,50000,0,10,2.5,763500,0.00230000005103648,1,9.53667640686035,3911,
+98,TITAN,Moons,0,0.21,0.08,50000,0,1,2.5,2574500,0.134499996900558,1,9.53667640686035,3911,
+99,DIONE,Moons,0,0.7,0.08,50000,0,12,2.5,564000,0.00109000003430992,1,9.53667640686035,3911,
+100,TETHYS,Moons,0,0.8,0.08,50000,0,12,2.5,531000,0.000600000028498471,1,9.53667640686035,3911,
+101,ENCELADUS,Moons,0,0.9,0.08,50000,0,12,2.5,252000,0.000108000000182074,1,9.53667640686035,3911,
+106,TITANIA,Moons,0,0.35,0.08,50000,0,1.5,2.5,788000,0.00340000004507601,1,19.1891708374023,3911,
+107,OBERON,Moons,0,0.31,0.08,50000,0,1.5,2.5,761000,0.00300000002607703,1,19.1891708374023,3911,
+108,UMBRIEL,Moons,0,0.26,0.08,50000,0,1.5,2.5,584500,0.00120000005699694,1,19.1891708374023,3911,
+109,ARIEL,Moons,0,0.53,0.08,50000,0,1.5,2.5,578500,0.00120000005699694,1,19.1891708374023,3911,
+113,TRITON,Moons,0,0.9,0.08,50000,0,1.5,2.5,1353000,0.0214000009000301,1,30.0699195861816,3911,
+116,CHARON,Moons,0,0.41,0.08,50000,0,1.5,2.5,606000,0.00150000001303852,1,39.482120513916,3911,
+229,IAPETUS,Moons,0,0.2,0.08,50000,0,1.5,2.5,735000,0.00179999996908009,1,9.53667640686035,3911,`;
+
+            // ═══════════════════════════════════════════════════════════════
+            // PARSE CSV
+            // ═══════════════════════════════════════════════════════════════
+            function parseCSV(csv) {
+                const lines = csv.trim().split("\n");
+                const headers = lines[0].split(",");
+                return lines.slice(1).map((line) => {
+                    const vals = line.split(",");
+                    const obj = {};
+                    headers.forEach((h, i) => {
+                        const v = vals[i];
+                        obj[h.trim()] = isNaN(v) ? v : Number(v);
+                    });
+                    return obj;
+                });
+            }
+
+            const ALL_PLANETS = parseCSV(CSV_DATA);
+
+            // Compute derived gravity for planets where gravity=0
+            ALL_PLANETS.forEach((p) => {
+                if (p.gravity === 0) {
+                    const mass = p.mass1E24 * 1e24;
+                    const radius = p.radiusKm;
+                    p.computedGravity =
+                        radius > 0 && mass > 0
+                            ? (C.G * mass) / (radius * radius)
+                            : 0;
+                } else {
+                    p.computedGravity = p.gravity;
+                }
+                p.surface = 4 * Math.PI * p.radiusKm * p.radiusKm;
+                // Towed-asteroid surface (SolarBody-null fallback, see docs/GAME_MECHANICS_FINDINGS.md §11b)
+                const d = p.diameter;
+                const dKm = (d !== undefined && d !== null && d !== "" && !isNaN(d))
+                    ? Number(d) : (2 * p.radiusKm / 1000);
+                p.diameterKm = dKm;
+                const rTowed = dKm * 1000 / 2;
+                p.surfaceTowed = 4 * Math.PI * rTowed * rTowed;
+            });
+
+            // ═══════════════════════════════════════════════════════════════
+            // UTILITY FUNCTIONS
+            // ═══════════════════════════════════════════════════════════════
+            function fmtTemp(c) {
+                return (c >= 0 ? "+" : "") + c.toFixed(1) + " °C";
+            }
+            function fmtKt(kt) {
+                if (kt === 0) return "0 kt";
+                const abs = Math.abs(kt);
+                if (abs >= 1e12) return (kt / 1e12).toFixed(2) + " Pt";
+                if (abs >= 1e9) return (kt / 1e9).toFixed(2) + " Tt";
+                if (abs >= 1e6) return (kt / 1e6).toFixed(2) + " Gt";
+                if (abs >= 1e3) return (kt / 1e3).toFixed(2) + " Mt";
+                if (abs >= 1) return kt.toFixed(1) + " kt";
+                return (kt * 1000).toFixed(1) + " t";
+            }
+            function fmtPressure(atm) {
+                if (atm === 0) return "0 atm";
+                if (atm >= 1e9) return (atm / 1e9).toFixed(3) + " Gatm";
+                if (atm >= 1e6) return (atm / 1e6).toFixed(3) + " Matm";
+                if (atm >= 1000) return (atm / 1000).toFixed(3) + " katm";
+                if (atm >= 0.001) return atm.toFixed(3) + " atm";
+                // Below 0.001: round to first significant digit, max 12 decimals
+                const exp = Math.floor(Math.log10(atm));
+                const decimals = Math.min(-exp, 12);
+                const rounded = Math.round(atm * Math.pow(10, decimals)) / Math.pow(10, decimals);
+                if (rounded === 0) return "0 atm";
+                return rounded.toFixed(decimals) + " atm";
+            }
+            function fmtPercent(f) {
+                return (f * 100).toFixed(1) + "%";
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // SIMULATION (faithful reimplementation of game code)
+            // Source: Assembly-CSharp.decompiled.cs — HabitabilityParametersNew
+            // ═══════════════════════════════════════════════════════════════
+            function simulate(
+                planet,
+                mirrorCounts,
+                shadeCount,
+                resourceKt,
+                effectiveDistAU,
+                options,
+            ) {
+                const g = planet.computedGravity;
+                if (g < C.GRAV_THRESHOLD) {
+                    return {
+                        error: `Gravity ${g.toFixed(4)} m/s² is below game threshold (${C.GRAV_THRESHOLD} m/s²). Body cannot be terraformed.`,
+                    };
+                }
+
+                const R_m = planet.radiusKm;
+                // Towed asteroids lose SolarBody after pre-warm (confirmed via
+                // BepInEx diagnostic). Normal Surface during pre-warm, bugged
+                // diameter-based Surface during gameplay.
+                const isTowed =
+                    effectiveDistAU !== undefined &&
+                    Math.abs(effectiveDistAU - planet.distanceAU) > 1e-6 &&
+                    planet.objectType === "Asteroid";
+                let surface = planet.surface; // starts normal, switches to towed after pre-warm
+                const distAU =
+                    effectiveDistAU !== undefined
+                        ? effectiveDistAU
+                        : planet.distanceAU;
+                const distM = distAU * C.AU_TO_M;
+
+                // ── Mirror & shade strengths ──────────────────────────────────
+                // GetFinalStrengthForObject: strength = param / (d_mirror² × d_diff²) × count
+                // d_diff = |d_mirror − d_target| / strengthParam  (or 1.0 if same orbit)
+                let mirrorsStrength = 0;
+                MIRROR_ORBITS.forEach((orbit, i) => {
+                    const count = mirrorCounts[i] || 0;
+                    if (count <= 0) return;
+                    const dM = orbit.au;
+                    const dT = distAU;
+                    const sameOrbit = Math.abs(dM - dT) < 1e-4;
+                    const dDiff = sameOrbit ? 1.0 : (dM - dT) / C.DIST_PARAM;
+                    const perMirror =
+                        C.MIRROR_PARAM / (dM * dM * dDiff * dDiff);
+                    mirrorsStrength += perMirror * count;
+                });
+                const shadesStrength = shadeCount * C.SHADE_PARAM;
+
+                // ── Solar absorbed flux (W/m²) ──────────────────────────────────
+                // Game does NOT clamp (1-shadesStrength) in UpdateTemperature.
+                // shadesStrength > 1 → absorbed flux goes negative (displayed dark blue).
+                const L = C.SOLAR_FLUX * C.STAR_LUM;
+                const absorbed =
+                    ((L * (1 + mirrorsStrength) * (1 - shadesStrength)) /
+                        (4 * Math.PI * distM * distM)) *
+                    (1 - planet.albedo);
+                const internalFlux = planet.internalFlux;
+
+                // ── Equilibrium temperature (no atmosphere) ───────────────────
+                const T_eq = Math.pow(
+                    Math.max(
+                        absorbed / (4 * C.SIGMA),
+                        internalFlux / (4 * C.SIGMA),
+                    ),
+                    0.25,
+                );
+
+                // ── Pressure constant ─────────────────────────────────────────
+                // pressure = K × M_atm^(1/gasScaling), K = 1000g / surface / 101325
+                let K_pressure = (1000.0 * g) / surface / 101325.0;
+
+                // ── Convert user inputs from kt to tonnes ─────────────────────
+                const resourceTonnes = {};
+                RESOURCES.forEach((r) => {
+                    resourceTonnes[r.id] = (resourceKt[r.id] || 0) * 1000;
+                });
+
+                // ── State variables ───────────────────────────────────────────
+                let temperatureWithAtmOld = null; // pre-warm: carried; gameplay: locked null
+                let totalHC = 0;
+                let prevHC = 0;
+                let satPressOld = {};
+
+                // Deposit state: from user-specified gas/liquid/solid inputs.
+                // Total is the sum of the three columns.
+                let deposits = {};
+                const gasKt = options?.gasKt || {};
+                const liqKt = options?.liqKt || {};
+                RESOURCES.forEach((r) => {
+                    const g = (gasKt[r.id] || 0) * 1000;
+                    const l = (liqKt[r.id] || 0) * 1000;
+                    const s = Math.max(0, (resourceKt[r.id] || 0) * 1000);
+                    const total = g + l + s;
+                    deposits[r.id] = { gas: g, liquid: l, solid: s, total };
+                });
+
+                let pressure = 0;
+                let temperatureC = 0;
+                let temperatureK = 0;
+                let swings = 0;
+                let lastTick = 0;
+                let converged = false;
+                let tau = 0;
+                let prevGasFracs = {}; let prevPvaps = {}; let stableCount = 0;
+                let emissivity = 0;
+
+                // ── Cold-start for liquid-rich initial state ────────────────
+                // When the user seeds liquid water (matching a game save),
+                // pre-equilibrate temperature/HC/swing so tick 0 doesn't
+                // vaporise it all with the ε=0 Newton overshoot.
+                const liquidWaterInit = deposits["water"] ? deposits["water"].liquid : 0;
+                if (liquidWaterInit > 0) {
+                    const whd = Math.min(
+                        C.NORMAL_HEAT_DEPTH,
+                        (Math.pow(liquidWaterInit, C.WATER_SCALING) * 1000.0 +
+                            surface * C.MIN_SURF_COV) / surface,
+                    );
+                    const hcOcean = C.WATER_HC_PARAM * whd * C.SURF_WATER_COV;
+                    totalHC = planet.heatCapacityRock + hcOcean;
+                    // Tier 3 swing model
+                    const denom_cs = 4 * C.SIGMA * Math.pow(Math.max(T_eq, 1e-10), 3) * 86400;
+                    const tauRadDays_cs = totalHC / denom_cs;
+                    const pRatio_cs = Math.max(0, planet.rotationPeriod) / Math.max(tauRadDays_cs, 1e-30);
+                    const rotFactor_cs = Math.sqrt(pRatio_cs / (1 + pRatio_cs));
+                    const fluxFactor_cs = T_eq / C.T_REF;
+                    const hcDamping_cs = totalHC > 0 ? Math.sqrt(C.HC_ROCK_BASE / totalHC) : 1;
+                    swings =
+                        C.EARTH_TEMP_SWING *
+                        fluxFactor_cs *
+                        (rotFactor_cs / C.ROT_FACTOR_EARTH) *
+                        hcDamping_cs;
+                    temperatureK = T_eq;
+                    temperatureC = T_eq + C.MIN_KELWIN;
+                    temperatureWithAtmOld = T_eq;
+                }
+
+                // ── Seed satPressOld for all non-empty deposits ───────────
+                // Prevents first-tick collapse (game save provides this via
+                // saturationPressureForBoilingOld). Uses unshaded T_eq so
+                // the seed is reasonable even with heavy shade blockage.
+                const absorbedUnshaded =
+                    ((L * (1 + mirrorsStrength)) / (4 * Math.PI * distM * distM)) *
+                    (1 - planet.albedo);
+                const T_eq_unshaded = Math.pow(
+                    Math.max(absorbedUnshaded / (4 * C.SIGMA), internalFlux / (4 * C.SIGMA)),
+                    0.25);
+                const T_hot_seed = (temperatureK || T_eq_unshaded) + (swings || 50);
+                RESOURCES.forEach((r) => {
+                    const d = deposits[r.id];
+                    if (!d || d.total <= 0) return;
+                    if (!r.hvap || !r.tBoil) return;
+                    if (satPressOld[r.id] !== undefined) return;
+                    const cc_arg = (-r.hvap / C.R_GAS) * (1.0 / T_hot_seed - 1.0 / r.tBoil);
+                    const psat = C.EARTH_PRESSURE * Math.exp(cc_arg);
+                    if (isFinite(psat) && psat > 0) {
+                        satPressOld[r.id] = psat;
+                    }
+                });
+
+                // ── Two-phase simulation (pre-warm + gameplay) ─────────────────
+                // See docs/BUG_REPORT_TEMPERATURE_COLD_START.md
+                const PREWARM_TICKS = TICK.PREWARM;
+                const TOTAL_TICKS = TICK.MAX;
+                const isPreWarm = (t) => t < PREWARM_TICKS;
+                const maxTicks = options?.maxTicks ?? TOTAL_TICKS;
+
+                for (let tick = 0; tick < maxTicks; tick++) {
+                    lastTick = tick + 1;
+
+                    // 1. UpdatePressure — from gas state deposits only
+                    let currentAtmMass = 0;
+                    const gasAmts = {};
+                    RESOURCES.forEach((r) => {
+                        const g_amt = deposits[r.id] ? deposits[r.id].gas : 0;
+                        gasAmts[r.id] = g_amt;
+                        currentAtmMass += g_amt;
+                    });
+                    pressure =
+                        currentAtmMass > 0
+                            ? K_pressure *
+                              Math.pow(currentAtmMass, 1.0 / C.GAS_SCALING)
+                            : 0;
+
+                    // 2. UpdateTemperature
+                    // Optical depth: τ = Σ_gas (P×101325/g) × (m_gas/M_atm) × optDepth
+                    tau = 0;
+                    if (currentAtmMass > 0 && pressure > 0) {
+                        const columnMass = (pressure * 101325.0) / g;
+                        RESOURCES.forEach((r) => {
+                            if (gasAmts[r.id] > 0 && r.optDepth > 0) {
+                                const gasFrac = gasAmts[r.id] / currentAtmMass;
+                                tau += columnMass * gasFrac * r.optDepth;
+                            }
+                        });
+                    }
+                    emissivity = 1 - Math.exp(-tau);
+
+                    // Phase 1 (pre-warm): use previous temperature for Newton correction
+                    // Phase 2 (gameplay): lock to T_eq (matches in-game TWAO nullification)
+                    // Guard: if the Newton anchor is too close to 0, fall back to T_eq.
+                    // The game never hits x~0 because planets start with a pre-existing
+                    // warm atmosphere (e.g. Venus at 90 atm CO2 -> T_eq ~230 K). The
+                    // calculator starts from vacuum and can collapse to 0 K at 100% shade
+                    // blockage, which would cause division by 0^3 on the next tick.
+                    const newtonAnchor = isPreWarm(tick)
+                        ? temperatureWithAtmOld !== null
+                            ? temperatureWithAtmOld
+                            : T_eq
+                        : T_eq;
+                    const x = newtonAnchor > 1e-6 ? newtonAnchor : T_eq;
+                    const num8 =
+                        (absorbed / 4 -
+                            (emissivity * C.SIGMA * Math.pow(x, 4) +
+                                internalFlux)) /
+                        (4 * C.SIGMA * Math.pow(x, 3));
+                    const T_gh =
+                        T_eq *
+                        Math.pow(
+                            1 +
+                                0.75 *
+                                    emissivity *
+                                    Math.pow(pressure, C.PRESSURE_SCALING),
+                            0.25,
+                        );
+                    let b = T_gh + num8;
+                    b = Math.max(0, b);
+                    const prevTempK = temperatureK;
+                    // Phase 1: store for next iteration (pre-warm convergence)
+                    // Phase 2: leave null (gameplay — Newton correction never activates)
+                    if (isPreWarm(tick)) temperatureWithAtmOld = b;
+                    temperatureK = b;
+                    temperatureC = b + C.MIN_KELWIN;
+
+                    // 3. UpdateTotalHeatCapacity
+                    const liquidWater = deposits["water"]
+                        ? deposits["water"].liquid
+                        : 0;
+                    const waterHeatDepth = Math.min(
+                        C.NORMAL_HEAT_DEPTH,
+                        (Math.pow(liquidWater, C.WATER_SCALING) * 1000.0 +
+                            surface * C.MIN_SURF_COV) /
+                            surface,
+                    );
+                    const hcOcean =
+                        C.WATER_HC_PARAM * waterHeatDepth * C.SURF_WATER_COV;
+
+                    let hcAtm = 0;
+                    if (currentAtmMass > 0 && pressure > 0) {
+                        RESOURCES.forEach((r) => {
+                            if (gasAmts[r.id] > 0) {
+                                const gasFrac = gasAmts[r.id] / currentAtmMass;
+                                hcAtm +=
+                                    r.heatCap * gasFrac * pressure * 101325.0;
+                            }
+                        });
+                        hcAtm = (hcAtm / g) * C.ATM_PERCENTAGE;
+                    }
+
+                    const newTotalHC =
+                        planet.heatCapacityRock + hcOcean + hcAtm;
+                    // Force prevHC = totalHC so √(prevHC/totalHC) = 1 always.
+                    // The game only updates prevHC when totalHC changes, which causes the
+                    // swing to be distorted when resources are added all at once. As a
+                    // planning tool we want the true steady-state value.
+                    prevHC = newTotalHC;
+                    totalHC = newTotalHC;
+
+                    // 4. UpdateTemperatureSwings (Tier 3 model)
+                    // Radiative cooling timescale (days)
+                    // Uses epsilon on T_eq^3 to handle edge cases:
+                    //   totalHC=0 -> tauRad=0 -> instant response -> max swing
+                    //   T_eq~0    -> tauRad=Inf -> no flux -> no swing
+                    const denom = 4 * C.SIGMA * Math.pow(Math.max(T_eq, 1e-10), 3) * 86400;
+                    const tauRadDays = totalHC / denom;
+                    const pRatio = Math.max(0, planet.rotationPeriod) / Math.max(tauRadDays, 1e-30);
+                    const rotFactor = Math.sqrt(pRatio / (1 + pRatio));
+                    const fluxFactor = T_eq / C.T_REF;
+                    const hcDamping = totalHC > 0 ? Math.sqrt(C.HC_ROCK_BASE / totalHC) : 1;
+                    const atmTransport = 1 / (1 + C.K_HEAT_TRANSPORT * Math.pow(pressure, C.HEAT_TRANSPORT_EXP));
+                    swings =
+                        C.EARTH_TEMP_SWING *
+                        fluxFactor *
+                        (rotFactor / C.ROT_FACTOR_EARTH) *
+                        hcDamping *
+                        atmTransport;
+
+                    // 5. UpdateDepositStates
+                    const T_hot = temperatureK + swings;
+                    const T_cold = temperatureK - swings;
+                    const swingEff = Math.max(swings, 1e-6);
+                    const newDeposits = {};
+
+                    RESOURCES.forEach((r) => {
+                        const total = deposits[r.id] ? deposits[r.id].total : 0;
+                        if (total <= 0) {
+                            newDeposits[r.id] = {
+                                gas: 0,
+                                liquid: 0,
+                                solid: 0,
+                                total: 0,
+                            };
+                            return;
+                        }
+                        // Clausius-Clapeyron vapour pressure (at T_hot, in atm)
+                        const cc_arg =
+                            (-r.hvap / C.R_GAS) * (1.0 / T_hot - 1.0 / r.tBoil);
+                        const P_sat_direct =
+                            C.EARTH_PRESSURE * Math.exp(cc_arg);
+                        let P_sat;
+                        if (satPressOld[r.id] !== undefined) {
+                            const ratio =
+                                isFinite(P_sat_direct) && P_sat_direct > 0
+                                    ? P_sat_direct / satPressOld[r.id]
+                                    : P_sat_direct <= 0
+                                      ? 1 - C.SAT_MAX_CHANGE
+                                      : 1 + C.SAT_MAX_CHANGE;
+                            P_sat =
+                                satPressOld[r.id] *
+                                Math.min(
+                                    1 + C.SAT_MAX_CHANGE,
+                                    Math.max(ratio, 1 - C.SAT_MAX_CHANGE),
+                                );
+                        } else {
+                            P_sat =
+                                isFinite(P_sat_direct) && P_sat_direct >= 0
+                                    ? P_sat_direct
+                                    : 0;
+                        }
+                        if (!isFinite(P_sat) || isNaN(P_sat) || P_sat < 0)
+                            P_sat = 0;
+                        satPressOld[r.id] = P_sat > 0 ? P_sat : undefined;
+
+                        // Boiling point at current pressure (inverse Clausius-Clapeyron)
+                        let T_boil_act;
+                        if (pressure <= 0 || pressure === 0) {
+                            T_boil_act = r.tBoil;
+                        } else {
+                            const inv =
+                                1.0 / r.tBoil -
+                                (C.R_GAS / r.hvap) *
+                                    Math.log(pressure / C.EARTH_PRESSURE);
+                            T_boil_act =
+                                inv > 0 ? Math.max(0, 1.0 / inv) : Infinity;
+                        }
+
+                        // Gas fraction = clamp(P_sat, 0, 1)
+                        const gasFrac = Math.min(1, Math.max(0, P_sat));
+
+                        // Liquid fraction (requires P >= triple, T_hot >= T_melt, T_cold < T_boil_act, P >= P_sat)
+                        let liquidFrac = 0;
+                        const canBeLiquid =
+                            pressure >= r.pTriple &&
+                            T_hot >= r.tMelt &&
+                            T_cold < T_boil_act &&
+                            pressure >= P_sat;
+
+                        if (canBeLiquid) {
+                            const winMin = Math.max(
+                                -1,
+                                Math.min(
+                                    1,
+                                    (r.tMelt - temperatureK) / swingEff,
+                                ),
+                            );
+                            const winMax = Math.max(
+                                -1,
+                                Math.min(
+                                    1,
+                                    (T_boil_act - temperatureK) / swingEff,
+                                ),
+                            );
+                            const liquidAngle =
+                                Math.asin(winMax) - Math.asin(winMin);
+                            liquidFrac =
+                                (1 / Math.PI) * liquidAngle +
+                                (1 - (gasFrac + (1 / Math.PI) * liquidAngle)) *
+                                    0.9;
+                            liquidFrac = Math.max(0, liquidFrac);
+                        }
+
+                        const solidFrac = 1 - gasFrac - liquidFrac; // Game does not clamp — negative solid mass can appear
+
+                        newDeposits[r.id] = {
+                            gas: total * gasFrac,
+                            liquid: total * liquidFrac,
+                            solid: total * solidFrac,
+                            total,
+                            gasFrac,
+                            liquidFrac,
+                            solidFrac,
+                            P_sat,
+                            T_boil_act,
+                        };
+                    });
+                    deposits = newDeposits;
+
+                    // ── Convergence check (gameplay phase only) ────────────
+                    // Track deposit phase stability — temperature alone can
+                    // flatline while deposit phases are still shifting toward equilibrium.
+                    // Track gas-fraction changes AND P_sat changes.
+                    // gasFrac can be pegged at 1.0 while P_sat creeps down via SAT_MAX_CHANGE.
+                    let maxFracChange = 0;
+                    let maxPvapChange = 0;
+                    RESOURCES.forEach((r) => {
+                        const d = deposits[r.id];
+                        const currFrac = d ? (d.gasFrac || 0) : 0;
+                        const prevFrac = prevGasFracs[r.id] ?? currFrac;
+                        maxFracChange = Math.max(maxFracChange, Math.abs(currFrac - prevFrac));
+                        prevGasFracs[r.id] = currFrac;
+
+                        const currPvap = d ? (d.P_sat || 0) : 0;
+                        const prevPvap = prevPvaps[r.id] ?? currPvap;
+                        if (prevPvap > 0) {
+                            maxPvapChange = Math.max(maxPvapChange, Math.abs(currPvap - prevPvap) / prevPvap);
+                        }
+                        prevPvaps[r.id] = currPvap;
+                    });
+                    const tempStable = Math.abs(temperatureK - prevTempK) < 0.005;
+                    const fracStable = maxFracChange < 1e-6 && maxPvapChange < 0.001;
+                    if (!isPreWarm(tick) && tick >= TICK.MIN_CONVERGE && tempStable && fracStable) {
+                        stableCount++;
+                    } else {
+                        stableCount = 0;
+                    }
+                    if (stableCount >= 3 && !options?.noConverge) {
+                        converged = true;
+                        break;
+                    }
+                    // Towed asteroids: switch to bugged surface at end of pre-warm.
+                    // Matches game: SolarBody destroyed after AfterLoadState loop.
+                    if (isTowed && tick === PREWARM_TICKS - 1 && surface === planet.surface) {
+                        surface = planet.surfaceTowed;
+                        K_pressure = (1000.0 * g) / surface / 101325.0;
+                        stableCount = 0;
+                        prevGasFracs = {}; prevPvaps = {};
+                    }
+                }
+
+                // ── Water result ──────────────────────────────────────────────
+                const liquidWaterFinal = deposits["water"]
+                    ? deposits["water"].liquid
+                    : 0;
+                // IdealWaterAmount = surface × oceanDepth × surfaceWaterCoverage (tonnes, density=1t/m³)
+                const idealWaterAmount =
+                    surface * C.OCEAN_DEPTH * C.SURF_WATER_COV;
+                // Amount at which game's water parameter = 1.0
+                const idealWaterLinearTonnes = Math.pow(
+                    idealWaterAmount,
+                    1 / C.WATER_SCALING,
+                );
+                // Game's water habitability parameter
+                const waterParam =
+                    liquidWaterFinal > 0
+                        ? Math.pow(liquidWaterFinal, C.WATER_SCALING) /
+                          idealWaterAmount
+                        : 0;
+
+                // Oxygen mass fraction (matches game's UpdateComposition)
+                const oxygenGasMass = deposits["oxygen"]
+                    ? deposits["oxygen"].gas
+                    : 0;
+                const totalAtmMass = RESOURCES.reduce(
+                    (s, r2) => s + (deposits[r2.id] ? deposits[r2.id].gas : 0),
+                    0,
+                );
+                const oxygenMassFrac =
+                    totalAtmMass > 0 ? oxygenGasMass / totalAtmMass : 0;
+
+                return {
+                    temperature: temperatureC,
+                    temperatureK,
+                    swings,
+                    tMin: Math.max(C.MIN_KELWIN, temperatureC - swings),
+                    tMax: temperatureC + swings,
+                    pressure,
+                    tau,
+                    emissivity,
+                    mirrorsStrength,
+                    shadesStrength,
+                    absorbed,
+                    T_eq: T_eq + C.MIN_KELWIN, // in Celsius
+                    liquidWaterKt: liquidWaterFinal / 1000,
+                    idealWaterKt: idealWaterLinearTonnes / 1000,
+                    waterParam,
+                    waterFraction:
+                        idealWaterLinearTonnes > 0
+                            ? liquidWaterFinal / idealWaterLinearTonnes
+                            : 0,
+                    deposits,
+                    ticks: lastTick,
+                    converged,
+                    gravity: g,
+                    surface,
+                    oxygenMassFrac,
+                    // Tier 3 swing diagnostics
+                    totalHC,
+                    swingFluxFactor: T_eq / C.T_REF,
+                    swingHcDamping: totalHC > 0 ? Math.sqrt(C.HC_ROCK_BASE / totalHC) : 1,
+                    swingAtmTransport: 1 / (1 + C.K_HEAT_TRANSPORT * Math.pow(pressure, C.HEAT_TRANSPORT_EXP)),
+                };
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // LIVE CONTINUOUS SIMULATION
+            // ═══════════════════════════════════════════════════════════════
+            let liveSimState = null;
+            let liveSimInterval = null;
+
+            function stopLiveSim(manual) {
+                if (liveSimInterval) { clearInterval(liveSimInterval); liveSimInterval = null; }
+                if (liveSimState) {
+                    if (manual) {
+                        liveSimState._manuallyStopped = true;
+                        liveSimState.converged = false;
+                    }
+                    renderResults(liveSimState._planet, liveSimState);
+                }
+                liveSimState = null;
+            }
+
+
+            function startLiveSim(planet, mirrorCounts, shadeCount, resourceKt, effDist, opts) {
+                stopLiveSim();
+                const MAX_BATCH = TICK.BATCH;
+                const MAX_TOTAL = TICK.MAX;
+
+                // Phase 1: run batch ticks instantly
+                const batchTicks = Math.max(MAX_BATCH, 1);
+                let r = simulate(planet, mirrorCounts, shadeCount, resourceKt, effDist, { ...opts, maxTicks: batchTicks });
+                r._planet = planet;
+                r._resourceKt = resourceKt;
+                r._mirrorCounts = mirrorCounts;
+                r._shadeCount = shadeCount;
+                r._effDist = effDist;
+                r._tickCount = batchTicks;
+                liveSimState = r;
+
+                if (r.converged) {
+                    renderResults(planet, r);
+                    return r;
+                }
+
+                // Show status bar
+
+                // Phase 2: 1 tick/sec from 101 to 500
+                liveSimInterval = setInterval(() => {
+                                    if (!liveSimState) { stopLiveSim(); return; }
+                                    liveSimState._tickCount++;
+                                    const fresh = simulate(
+                                        liveSimState._planet,
+                                        liveSimState._mirrorCounts,
+                                        liveSimState._shadeCount,
+                                        liveSimState._resourceKt,
+                                        liveSimState._effDist,
+                                        { ...opts, maxTicks: liveSimState._tickCount }
+                                    );
+                    fresh._planet = liveSimState._planet;
+                    fresh._resourceKt = liveSimState._resourceKt;
+                    fresh._mirrorCounts = liveSimState._mirrorCounts;
+                    fresh._shadeCount = liveSimState._shadeCount;
+                    fresh._effDist = liveSimState._effDist;
+                    fresh._tickCount = liveSimState._tickCount;
+                    liveSimState = fresh;
+                    renderResults(liveSimState._planet, fresh);
+
+                    if (fresh.converged || fresh._tickCount >= MAX_TOTAL) {
+                        stopLiveSim();
+                    } else {
+                    }
+                }, 1000);
+                return r;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // ASTEROID ORBIT SELECTION (for towed asteroids)
+            // ═══════════════════════════════════════════════════════════════
+            function getEffectiveDistanceAU() {
+                const p = getSelectedPlanet();
+                if (!p || p.objectType !== "Asteroid")
+                    return p ? p.distanceAU : 1;
+                const orbitSel = document.getElementById("orbit-select");
+                if (!orbitSel) return p.distanceAU;
+                const val = orbitSel.value;
+                if (val === "original") return p.distanceAU;
+                return Number(val);
+            }
+
+            function buildOrbitSelector(asteroid, orbitSel) {
+                // Preserve current selection if already built
+                const prevVal = orbitSel.value;
+                orbitSel.innerHTML = "";
+
+                // Option 1: Original orbit
+                const optOrig = document.createElement("option");
+                optOrig.value = "original";
+                optOrig.textContent = `Original orbit (${asteroid.distanceAU.toFixed(3)} AU)`;
+                orbitSel.appendChild(optOrig);
+
+                // Get all planets sorted by distance
+                const planets = ALL_PLANETS.filter(
+                    (p) => p.objectType === "Planet",
+                ).sort((a, b) => a.distanceAU - b.distanceAU);
+
+                planets.forEach((pl) => {
+                    const opt = document.createElement("option");
+                    opt.value = pl.distanceAU;
+                    opt.textContent = `${pl.name} (${pl.distanceAU.toFixed(3)} AU)`;
+                    orbitSel.appendChild(opt);
+                });
+
+                // Restore previous selection if it still exists
+                const options = [...orbitSel.options].map((o) => o.value);
+                if (prevVal && options.includes(prevVal)) {
+                    orbitSel.value = prevVal;
+                } else {
+                    orbitSel.value = "original";
+                }
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // UI — PLANET SELECT
+            // ═══════════════════════════════════════════════════════════════
+            function buildPlanetSelect() {
+                const sel = document.getElementById("planet-select");
+                const planets = [],
+                    moons = [],
+                    asteroids = [];
+                ALL_PLANETS.filter(
+                    (p) =>
+                        p.objectType !== "Other" &&
+                        p.computedGravity >= C.GRAV_THRESHOLD,
+                ).forEach((p) => {
+                    if (p.objectType === "Planet") planets.push(p);
+                    else if (p.objectType === "Moons") moons.push(p);
+                    else asteroids.push(p);
+                });
+                planets.sort((a, b) => a.distanceAU - b.distanceAU);
+                asteroids.sort((a, b) => a.distanceAU - b.distanceAU);
+
+                const MOON_ORDER = {
+                    MARS: ["Deimos", "Phobos"],
+                    JUPITER: [
+                        "Amalthea",
+                        "Callisto",
+                        "Ganymede",
+                        "Europa",
+                        "Io",
+                    ],
+                    SATURN: [
+                        "Hyperion",
+                        "Mimas",
+                        "Enceladus",
+                        "Tethys",
+                        "Dione",
+                        "Iapetus",
+                        "Rhea",
+                        "Titan",
+                    ],
+                    URANUS: ["Puck", "Ariel", "Umbriel", "Oberon", "Titania"],
+                };
+
+                // Group moons by parent planet (matched by distanceAU)
+                const moonByParent = {};
+                moons.forEach((m) => {
+                    let best = null,
+                        bestDiff = Infinity;
+                    planets.forEach((p) => {
+                        const d = Math.abs(m.distanceAU - p.distanceAU);
+                        if (d < bestDiff) {
+                            bestDiff = d;
+                            best = p;
+                        }
+                    });
+                    const key = best ? best.name.toUpperCase() : "OTHER";
+                    if (!moonByParent[key]) moonByParent[key] = [];
+                    moonByParent[key].push(m);
+                });
+                // Sort moons within each parent group
+                for (const [parentKey, mlist] of Object.entries(moonByParent)) {
+                    const order = MOON_ORDER[parentKey] || [];
+                    mlist.sort((a, b) => {
+                        const ai = order.findIndex(
+                            (n) => n.toUpperCase() === a.name.toUpperCase(),
+                        );
+                        const bi = order.findIndex(
+                            (n) => n.toUpperCase() === b.name.toUpperCase(),
+                        );
+                        if (ai >= 0 && bi >= 0) return ai - bi;
+                        if (ai >= 0) return -1;
+                        if (bi >= 0) return 1;
+                        return a.name.localeCompare(b.name);
+                    });
+                }
+
+                // Build flat list: planet, then its moons indented, then next planet, etc.
+                function addOption(id, name, indent) {
+                    const opt = document.createElement("option");
+                    opt.value = id;
+                    opt.textContent = (indent ? "    " : "") + name;
+                    sel.appendChild(opt);
+                }
+
+                planets.forEach((p) => {
+                    addOption(p.id, p.name, false);
+                    const key = p.name.toUpperCase();
+                    const mlist = moonByParent[key];
+                    if (mlist)
+                        mlist.forEach((m) => addOption(m.id, m.name, true));
+                });
+
+                asteroids.forEach((p) => addOption(p.id, p.name, false));
+
+                sel.value = 59;
+                updatePlanetStats();
+                sel.addEventListener("change", () => {
+                    updatePlanetStats();
+                    calculate();
+                });
+            }
+
+            function getSelectedPlanet() {
+                const id = Number(
+                    document.getElementById("planet-select").value,
+                );
+                return ALL_PLANETS.find((p) => p.id === id);
+            }
+
+            function updatePlanetStats() {
+                const p = getSelectedPlanet();
+                if (!p) return;
+                const g = p.computedGravity;
+                const R = (p.radiusKm / 1000).toFixed(2);
+                const canTf = g >= C.GRAV_THRESHOLD;
+                const effDist = getEffectiveDistanceAU();
+                const isAsteroid = p.objectType === "Asteroid";
+                const isTowed = isAsteroid &&
+                    Math.abs(effDist - p.distanceAU) > 1e-6;
+                const radiusKm = isTowed ? (p.diameterKm / 2) : (p.radiusKm / 1000);
+                const radiusUnit = isTowed ? "m" : "Mm";
+                const radiusDisplay = isTowed
+                    ? (radiusKm * 1000).toFixed(0)
+                    : radiusKm.toFixed(2);
+                document.getElementById("planet-stats").innerHTML = `
+    <div class="stat-box"><div class="label">Gravity</div>
+      <div class="value" style="color:${canTf ? "" : "var(--red)"}">
+        ${g.toFixed(3)} m/s²
+      </div></div>
+    <div class="stat-box"><div class="label">Orbit</div>
+      <div class="value">${effDist.toFixed(3)} AU</div></div>
+    <div class="stat-box"><div class="label">Radius</div>
+      <div class="value" style="color:">${radiusDisplay} ${radiusUnit}</div></div>
+    <div class="stat-box"><div class="label">Albedo / Int.Flux</div>
+      <div class="value">${p.albedo} / ${p.internalFlux}</div></div>
+    <div class="stat-box"><div class="label">Rotation Period</div>
+      <div class="value">${Number(p.rotationPeriod.toFixed(3))} days</div></div>
+    <div class="stat-box"><div class="label">HC Rock</div>
+      <div class="value">${(p.heatCapacityRock / 1000).toFixed(0)} kJ/kg·K</div></div>
+  `;
+
+                // Show/hide orbit selector for asteroids
+                const orbitDiv = document.getElementById("orbit-selector");
+                const orbitSel = document.getElementById("orbit-select");
+                if (isAsteroid) {
+                    orbitDiv.style.display = "block";
+                    buildOrbitSelector(p, orbitSel);
+                    orbitSel.onchange = () => {
+                        updatePlanetStats();
+                        calculate();
+                    };
+                } else {
+                    orbitDiv.style.display = "none";
+                }
+
+                // Update mirror strength hints (with effective distance)
+                updateMirrorHints(p);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // UI — MIRROR INPUTS
+            // ═══════════════════════════════════════════════════════════════
+            function buildMirrorInputs() {
+                const container = document.getElementById("mirror-inputs");
+                MIRROR_ORBITS.forEach((orbit, i) => {
+                    const label = document.createElement("span");
+                    label.className = "orbit-label";
+                    label.textContent = `${orbit.emoji} ${orbit.name} `;
+                    const au = document.createElement("span");
+                    au.className = "au";
+                    au.textContent = `(${orbit.au.toFixed(3)} AU)`;
+                    label.appendChild(au);
+
+                    const wrapper = document.createElement("div");
+                    wrapper.style.cssText =
+                        "display:flex;gap:4px;align-items:center;";
+
+                    const btnMinus = document.createElement("button");
+                    btnMinus.className = "stepper-btn";
+                    btnMinus.textContent = "−";
+                    btnMinus.onclick = () => stepMirror(-1, `mirror-${i}`);
+
+                    const input = document.createElement("input");
+                    input.type = "number";
+                    input.id = `mirror-${i}`;
+                    input.min = 0;
+                    input.value = 0;
+                    input.step = 1;
+                    input.placeholder = "0";
+                    input.style.flex = "1";
+                    input.addEventListener("input", calculate);
+
+                    const btnPlus = document.createElement("button");
+                    btnPlus.className = "stepper-btn";
+                    btnPlus.textContent = "+";
+                    btnPlus.onclick = () => stepMirror(1, `mirror-${i}`);
+
+                    wrapper.appendChild(btnMinus);
+                    wrapper.appendChild(input);
+                    wrapper.appendChild(btnPlus);
+
+                    container.appendChild(label);
+                    container.appendChild(wrapper);
+
+                    // Strength hint row — spans full grid width
+                    const hint = document.createElement("span");
+                    hint.id = `mirror-hint-${i}`;
+                    hint.className = "orbit-strength";
+                    hint.style.cssText = "grid-column:1/-1;font-size:10px;color:var(--accent);";
+                    container.appendChild(hint);
+                });
+                // Build shade row in the SAME grid so column widths align
+                const divider = document.getElementById("mirror-shade-divider");
+                if (divider) divider.style.display = "block";
+
+                // Divider row spanning both columns
+                const divRow = document.createElement("div");
+                divRow.style.cssText =
+                    "grid-column:1/-1;height:1px;background:var(--border);margin:4px 0;";
+                container.appendChild(divRow);
+
+                const sLabel = document.createElement("span");
+                sLabel.className = "orbit-label";
+                sLabel.textContent = "⚫ Shades";
+
+                const sWrapper = document.createElement("div");
+                sWrapper.style.cssText =
+                    "display:flex;gap:4px;align-items:center;";
+
+                const sBtnMinus = document.createElement("button");
+                sBtnMinus.className = "stepper-btn";
+                sBtnMinus.textContent = "−";
+                sBtnMinus.onclick = () => stepMirror(-1, "shade-count");
+
+                const sInput = document.createElement("input");
+                sInput.type = "number";
+                sInput.id = "shade-count";
+                sInput.min = 0;
+                sInput.value = 0;
+                sInput.step = 1;
+                sInput.placeholder = "0";
+                sInput.style.flex = "1";
+                sInput.addEventListener("input", calculate);
+
+                const sBtnPlus = document.createElement("button");
+                sBtnPlus.className = "stepper-btn";
+                sBtnPlus.textContent = "+";
+                sBtnPlus.onclick = () => stepMirror(1, "shade-count");
+
+                sWrapper.appendChild(sBtnMinus);
+                sWrapper.appendChild(sInput);
+                sWrapper.appendChild(sBtnPlus);
+
+                const sHint = document.createElement("span");
+                sHint.className = "orbit-strength";
+                sHint.style.cssText =
+                    "font-size:10px;color:var(--accent);margin-top:-2px;";
+                sHint.textContent = "-0.6% incident flux";
+
+                container.appendChild(sLabel);
+                container.appendChild(sWrapper);
+                container.appendChild(document.createTextNode(""));
+                container.appendChild(sHint);
+            }
+
+            function updateMirrorHints(planet) {
+              const dT = getEffectiveDistanceAU();
+              MIRROR_ORBITS.forEach((orbit, i) => {
+                  const hint = document.getElementById(`mirror-hint-${i}`);
+                  if (!hint) return;
+                  const dM = orbit.au;
+                  const sameOrbit = Math.abs(dM - dT) < 1e-4;
+                  const dDiff = sameOrbit ? 1.0 : Math.abs(dM - dT) / C.DIST_PARAM;
+                  const perMirror =
+                      C.MIRROR_PARAM / (dM * dM * dDiff * dDiff);
+                  hint.textContent =
+                      `${C.MIRROR_PARAM} / (${dM.toFixed(3)}² · ${dDiff.toFixed(3)}²) = +${perMirror.toFixed(3)}`;
+              });
+          }
+
+            // ═══════════════════════════════════════════════════════════════
+            // UI — RESOURCE INPUTS
+            // ═══════════════════════════════════════════════════════════════
+            function buildResourceInputs() {
+                const container = document.getElementById("resource-inputs");
+                // Column headers
+                const hdrIcon = document.createElement("div");
+                const hdrGas = document.createElement("div");
+                hdrGas.style.cssText = "font-size:9px;color:var(--gas-color);text-align:center";
+                hdrGas.textContent = "ⸯⸯ gas kt";
+                const hdrLiq = document.createElement("div");
+                hdrLiq.style.cssText = "font-size:9px;color:var(--liquid-color);text-align:center";
+                hdrLiq.textContent = "≈ liquid kt";
+                const hdrTot = document.createElement("div");
+                hdrTot.style.cssText = "font-size:9px;color:var(--text-dim);text-align:center";
+                hdrTot.textContent = "◼ solid kt";
+                container.appendChild(hdrIcon);
+                container.appendChild(hdrGas);
+                container.appendChild(hdrLiq);
+                container.appendChild(hdrTot);
+
+                RESOURCES.forEach((r) => {
+                    const icon = document.createElement("img");
+                    icon.className = "resource-icon";
+                    icon.src = ICON_DATA[r.id];
+                    icon.alt = r.name;
+                    icon.title = r.name;
+
+                    const gasInp = document.createElement("input");
+                    gasInp.type = "number";
+                    gasInp.id = `gas-${r.id}`;
+                    gasInp.min = 0;
+                    gasInp.value = 0;
+                    gasInp.step = "any";
+                    gasInp.placeholder = "0";
+                    gasInp.style.cssText = "width:100%;font-size:11px";
+                    gasInp.addEventListener("input", calculate);
+
+                    const liqInp = document.createElement("input");
+                    liqInp.type = "number";
+                    liqInp.id = `liq-${r.id}`;
+                    liqInp.min = 0;
+                    liqInp.value = 0;
+                    liqInp.step = "any";
+                    liqInp.placeholder = "0";
+                    liqInp.style.cssText = "width:100%;font-size:11px";
+                    liqInp.addEventListener("input", calculate);
+
+                    const totInp = document.createElement("input");
+                    totInp.type = "number";
+                    totInp.id = `res-${r.id}`;
+                    totInp.min = 0;
+                    totInp.value = 0;
+                    totInp.step = "any";
+                    totInp.placeholder = "0";
+                    totInp.style.cssText = "width:100%";
+                    totInp.addEventListener("input", calculate);
+
+                    container.appendChild(icon);
+                    container.appendChild(gasInp);
+                    container.appendChild(liqInp);
+                    container.appendChild(totInp);
+
+                    const sep = document.createElement("div");
+                    sep.style.cssText =
+                        "grid-column:1/5;height:1px;background:var(--border);margin:2px 0;";
+                    container.appendChild(sep);
+                });
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // UI — CALCULATE & RENDER RESULTS
+            // ═══════════════════════════════════════════════════════════════
+            let calcTimeout = null;
+
+            function stepMirror(delta, inputId) {
+                const el = document.getElementById(inputId);
+                if (!el) return;
+                let v = Number(el.value) || 0;
+                v = Math.max(0, v + delta);
+                el.value = v;
+                calculate();
+            }
+
+            function applyDefaults() {
+                const p = getSelectedPlanet();
+                if (!p) return;
+                const deps = SAVE_DEPOSITS[p.id];
+                if (!deps) {
+                    alert("No deposit data for " + p.name + " in NEW2020 save.");
+                    return;
+                }
+                // Clear first
+                RESOURCES.forEach((r) => {
+                    const el = document.getElementById("res-" + r.id);
+                    const gel = document.getElementById("gas-" + r.id);
+                    const lel = document.getElementById("liq-" + r.id);
+                    if (el) el.value = 0;
+                    if (gel) gel.value = 0;
+                    if (lel) lel.value = 0;
+                });
+                // Fill from save data (solid = total - gas - liquid)
+                for (const [rid, info] of Object.entries(deps)) {
+                    const gel = document.getElementById("gas-" + rid);
+                    if (gel) gel.value = info.gas || 0;
+                    const lel = document.getElementById("liq-" + rid);
+                    if (lel) lel.value = info.liquid || 0;
+                    const el = document.getElementById("res-" + rid);
+                    if (el) el.value = Math.max(0, (info.total || 0) - (info.gas || 0) - (info.liquid || 0));
+                }
+                calculate();
+            }
+
+            function clearAll() {
+                MIRROR_ORBITS.forEach((_, i) => {
+                    const el = document.getElementById(`mirror-${i}`);
+                    if (el) el.value = 0;
+                });
+                const shade = document.getElementById("shade-count");
+                if (shade) shade.value = 0;
+                RESOURCES.forEach((r) => {
+                    const el = document.getElementById(`res-${r.id}`);
+                    const gel = document.getElementById(`gas-${r.id}`);
+                    const lel = document.getElementById(`liq-${r.id}`);
+                    if (el) el.value = 0;
+                    if (gel) gel.value = 0;
+                    if (lel) lel.value = 0;
+                });
+                calculate();
+            }
+
+            function calculate() {
+                clearTimeout(calcTimeout);
+                calcTimeout = setTimeout(_doCalculate, 80);
+            }
+
+            function _doCalculate() {
+                saveState();
+                stopLiveSim();
+                const planet = getSelectedPlanet();
+                if (!planet) return;
+
+                const mirrorCounts = MIRROR_ORBITS.map((_, i) => {
+                    return Math.max(
+                        0,
+                        Number(document.getElementById(`mirror-${i}`).value) ||
+                            0,
+                    );
+                });
+                const shadeCount = Math.max(
+                    0,
+                    Number(document.getElementById("shade-count").value) || 0,
+                );
+                const resourceKt = {};
+                const resourceGasKt = {};
+                const resourceLiqKt = {};
+                RESOURCES.forEach((r) => {
+                    resourceKt[r.id] = Math.max(
+                        0,
+                        Number(document.getElementById(`res-${r.id}`).value) || 0,
+                    );
+                    resourceGasKt[r.id] = Math.max(
+                        0,
+                        Number(document.getElementById(`gas-${r.id}`).value) || 0,
+                    );
+                    resourceLiqKt[r.id] = Math.max(
+                        0,
+                        Number(document.getElementById(`liq-${r.id}`).value) || 0,
+                    );
+                });
+
+                const result = startLiveSim(
+                    planet,
+                    mirrorCounts,
+                    shadeCount,
+                    resourceKt,
+                    getEffectiveDistanceAU(),
+                    { gasKt: resourceGasKt, liqKt: resourceLiqKt },
+                );
+                renderResults(planet, result);
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // RENDER
+            // ═══════════════════════════════════════════════════════════════
+            function tempClass(c) {
+                if (c < -100) return "temp-cold";
+                if (c > 200) return "temp-hot";
+                if (c > 40) return "temp-warm";
+                if (c >= -30 && c <= 50) return "temp-ok";
+                return "temp-cold";
+            }
+            function pressClass(atm) {
+                if (atm <= 0) return "pressure-low";
+                if (atm > 5) return "pressure-high";
+                return "pressure-ok";
+            }
+
+            function renderResults(planet, r) {
+                const el = document.getElementById("results");
+                if (r.error) {
+                    el.innerHTML = `<div class="error-box">⚠ ${r.error}</div>`;
+                    return;
+                }
+
+                const resourceKt = {};
+                RESOURCES.forEach((res) => {
+                    resourceKt[res.id] = Math.max(
+                        0,
+                        Number(
+                            document.getElementById(`res-${res.id}`)?.value,
+                        ) || 0,
+                    );
+                });
+
+                // ── Summary cards ─────────────────────────────────────────────
+                const totalAtmKt = RESOURCES.reduce(
+                    (s, res) => s + (r.deposits[res.id]?.gas || 0) / 1000,
+                    0,
+                );
+
+                const cards = `
+  <div class="result-grid">
+    <div class="result-card ${tempClass(r.temperature)}">
+      <div class="rc-label">Avg Temperature</div>
+      <div class="rc-value">${fmtTemp(r.temperature)}</div>
+      <div class="rc-range">
+        <span class="cold">▼ ${fmtTemp(r.tMin)}</span>
+        <span class="hot">▲ ${fmtTemp(r.tMax)}</span>
+      </div>
+      <div class="rc-sub">Swing ± ${r.swings.toFixed(1)} K &nbsp;|&nbsp; T<sub>eq</sub> ${fmtTemp(r.T_eq)}</div>
+      <div class="rc-sub" style="font-size:0.7em;color:var(--text-dim);">flux &times;${r.swingFluxFactor.toFixed(3)} &nbsp; HC_damp &times;${r.swingHcDamping.toFixed(3)} &nbsp; atm_trans &times;${r.swingAtmTransport.toFixed(3)}</div>
+    </div>
+    <div class="result-card ${pressClass(r.pressure)}">
+      <div class="rc-label">Pressure</div>
+      <div class="rc-value">${fmtPressure(r.pressure)}</div>
+      <div class="rc-sub">Atm mass ${fmtKt(totalAtmKt)}</div>
+      <div class="rc-sub">τ = ${r.tau.toFixed(3)} &nbsp;|&nbsp; ε = ${r.emissivity.toFixed(3)}</div>
+      <div class="rc-sub">O₂ ${(r.oxygenMassFrac * 100).toFixed(3)}% by mass</div>
+    </div>
+    <div class="result-card ${r.waterParam > 0.5 ? "water-full" : "water-low"}">
+      <div class="rc-label">Liquid Water</div>
+      <div class="rc-value">${fmtKt(r.liquidWaterKt)}</div>
+      <div class="rc-sub">${fmtPercent(r.waterFraction)} of ideal</div>
+      <div class="rc-sub">Game score ${r.waterParam.toFixed(4)} &nbsp;|&nbsp; ideal ${fmtKt(r.idealWaterKt)}</div>
+      <div class="rc-sub">Surface ${(r.surface / 1e12).toFixed(2)} × 10¹² m²</div>
+    </div>
+    <div class="result-card">
+      <div class="rc-label">Solar Flux</div>
+      <div class="rc-value" style="color:${r.absorbed > 0 ? "var(--orange)" : "#4477aa"};">${r.absorbed.toFixed(2)} W/m²</div>
+      <div class="rc-sub">Mirrors strength ${r.mirrorsStrength.toFixed(3)}</div>
+      <div class="rc-sub">Shades strength ${r.shadesStrength.toFixed(3)}</div>
+    </div>
+  </div>`;
+
+                // ── Phase state table ─────────────────────────────────────────
+                const hasAnyResource = RESOURCES.some(
+                    (res) => resourceKt[res.id] > 0,
+                );
+                let tableRows = "";
+                if (hasAnyResource) {
+                    RESOURCES.forEach((res) => {
+                        const d = r.deposits[res.id];
+                        if (!d || d.total <= 0) return;
+                        const totalKt = d.total / 1000;
+                        const gasKt = d.gas / 1000;
+                        const liqKt = d.liquid / 1000;
+                        const solKt = d.solid / 1000;
+                        const gf = (d.gasFrac || 0) * 100;
+                        const lf = (d.liquidFrac || 0) * 100;
+                        const sf = (d.solidFrac || 0) * 100;
+                        const gasStr =
+                            gasKt > 0
+                                ? `<span class="val-gas">${fmtKt(gasKt)}</span>`
+                                : `<span class="val-zero">—</span>`;
+                        const liqStr =
+                            liqKt > 0
+                                ? `<span class="val-liquid">${fmtKt(liqKt)}</span>`
+                                : `<span class="val-zero">—</span>`;
+                        const solStr =
+                            solKt !== 0
+                                ? `<span class="val-solid">${fmtKt(solKt)}</span>`
+                                : `<span class="val-zero">—</span>`;
+                        const pctStr = `${gf.toFixed(0)}% / ${lf.toFixed(0)}% / ${sf.toFixed(0)}%`;
+                        const barW_g = Math.max(0, gf).toFixed(1);
+                        const barW_l = Math.max(0, lf).toFixed(1);
+                        const barW_s = Math.max(0, sf).toFixed(1);
+
+                        // Show P_sat and T_boil for context
+                        const psat =
+                            d.P_sat !== undefined
+                                ? d.P_sat.toFixed(4) + " atm"
+                                : "—";
+                        const tboil =
+                            d.T_boil_act !== undefined
+                                ? isFinite(d.T_boil_act)
+                                    ? (d.T_boil_act + C.MIN_KELWIN).toFixed(1) +
+                                      "°C"
+                                    : "∞"
+                                : "—";
+
+                        tableRows += `
+      <tr>
+        <td>
+          <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">
+            <img src="${ICON_DATA[res.id]}" style="width:20px;height:20px;vertical-align:middle;object-fit:contain;" alt="${res.name}" title="${res.name}"> ${fmtKt(totalKt)} total &nbsp;|&nbsp; P<sub>vap</sub>=${psat} &nbsp;|&nbsp; T<sub>boil</sub>=${tboil}
+          </div>
+          <div class="phase-bar" style="margin-top:4px;">
+            <div class="bar-gas"    style="width:${barW_g}%"></div>
+            <div class="bar-liquid" style="width:${barW_l}%"></div>
+            <div class="bar-solid"  style="width:${barW_s}%"></div>
+          </div>
+        </td>
+        <td>${gasStr}<br><span style="font-size:10px;color:var(--gas-color)">${gf.toFixed(1)}%</span></td>
+        <td>${liqStr}<br><span style="font-size:10px;color:var(--liquid-color)">${lf.toFixed(1)}%</span></td>
+        <td>${solStr}<br><span style="font-size:10px;color:var(--solid-color)">${sf.toFixed(1)}%</span></td>
+      </tr>`;
+                    });
+                }
+
+                const phaseSection = hasAnyResource
+                    ? `
+  <div class="phase-section">
+    <h3>Resource Phase States</h3>
+    <table class="phase-table">
+      <thead>
+        <tr>
+          <th>Resource</th>
+          <th style="color:var(--gas-color)">ⸯⸯ Gas</th>
+          <th style="color:var(--liquid-color)">≈ Liquid</th>
+          <th style="color:var(--solid-color)">◼ Solid</th>
+        </tr>
+      </thead>
+      <tbody>${tableRows}</tbody>
+    </table>
+    <div class="sim-info">
+      <span>Planet: <span class="highlight">${planet.name}</span></span>
+      <span>Ticks: <span class="highlight">${r.ticks}</span></span>
+      <span id="sim-status-text">${
+        r._manuallyStopped ? "⏹️ Stopped" :
+        r.converged ? "✅ Converged" :
+        r.ticks >= TICK.MAX ? "⌛ Max ticks reached" :
+        liveSimState ? '⏳ Simulation is running <button onclick="stopLiveSim(true)" style="font-size:10px;padding:1px 6px;cursor:pointer;border:1px solid var(--border);border-radius:3px;background:var(--bg);color:var(--text);margin-left:4px;">Stop</button>' :
+        "✅ Converged"
+      }</span>
+    </div>
+  </div>`
+                    : `
+  <div class="phase-section" style="padding:14px;color:var(--text-dim);font-size:12px;">
+    Add resources above to see phase states.
+  </div>`;
+
+                el.innerHTML = cards + phaseSection;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // PERSISTENCE — survives F5/page reload
+            // ═══════════════════════════════════════════════════════════════
+            const LS = "se_tc_";
+            let _loading = true;
+            function saveState() {
+                if (_loading) return;
+                try {
+                    const sel = document.getElementById("planet-select");
+                    if (sel) localStorage.setItem(LS + "planet", sel.value);
+                    const orbitSel = document.getElementById("orbit-select");
+                    if (orbitSel)
+                        localStorage.setItem(LS + "orbit", orbitSel.value);
+                    MIRROR_ORBITS.forEach((_, i) => {
+                        const el = document.getElementById(`mirror-${i}`);
+                        if (el) localStorage.setItem(LS + `m${i}`, el.value);
+                    });
+                    const shade = document.getElementById("shade-count");
+                    if (shade) localStorage.setItem(LS + "shade", shade.value);
+                    RESOURCES.forEach((r) => {
+                        const el = document.getElementById(`res-${r.id}`);
+                        const gel = document.getElementById(`gas-${r.id}`);
+                        const lel = document.getElementById(`liq-${r.id}`);
+                        if (el) localStorage.setItem(LS + r.id, el.value);
+                        if (gel) localStorage.setItem(LS + "g_" + r.id, gel.value);
+                        if (lel) localStorage.setItem(LS + "l_" + r.id, lel.value);
+                    });
+                } catch (e) {}
+            }
+            function loadState() {
+                _loading = true;
+                try {
+                    const pid = localStorage.getItem(LS + "planet");
+                    const sel = document.getElementById("planet-select");
+                    if (pid && sel && sel.querySelector(`option[value="${pid}"]`)) {
+                        sel.value = pid;
+                        updatePlanetStats();
+                        const ov = localStorage.getItem(LS + "orbit");
+                        if (ov) {
+                            const orbitSel = document.getElementById("orbit-select");
+                            if (orbitSel) {
+                                orbitSel.value = ov;
+                                updatePlanetStats();
+                            }
+                        }
+                    }
+                    MIRROR_ORBITS.forEach((_, i) => {
+                        const v = localStorage.getItem(LS + `m${i}`);
+                        const el = document.getElementById(`mirror-${i}`);
+                        if (v !== null && el) el.value = v;
+                    });
+                    const sv = localStorage.getItem(LS + "shade");
+                    const shEl = document.getElementById("shade-count");
+                    if (sv !== null && shEl) shEl.value = sv;
+                    RESOURCES.forEach((r) => {
+                        const v = localStorage.getItem(LS + r.id);
+                        const el = document.getElementById(`res-${r.id}`);
+                        if (v !== null && el) el.value = v;
+                        const gv = localStorage.getItem(LS + "g_" + r.id);
+                        const gel = document.getElementById(`gas-${r.id}`);
+                        if (gv !== null && gel) gel.value = gv;
+                        const lv = localStorage.getItem(LS + "l_" + r.id);
+                        const lel = document.getElementById(`liq-${r.id}`);
+                        if (lv !== null && lel) lel.value = lv;
+                    });
+                    updateMirrorHints(getSelectedPlanet());
+                } catch (e) {}
+                _loading = false;
+            }
+
+            // ═══════════════════════════════════════════════════════════════
+            // INIT
+            // ═══════════════════════════════════════════════════════════════
+            buildPlanetSelect();
+            buildMirrorInputs();
+            buildResourceInputs();
+            loadState();
+            calculate();
+        </script>
+    </body>
+</html>
