@@ -3,7 +3,7 @@
     <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <title>Solar Expanse — Terraforming Simulator (Tier 3 Swing)</title>
+        <title>Solar Expanse — Terraforming Simulator (AltSwing v3 + AltMirror)</title>
         <style>
             :root {
                 --bg: #07090f;
@@ -593,7 +593,7 @@
         <header>
             <div>
                 <div class="logo"><span>Solar Expanse</span></div>
-                <div class="subtitle">Terraforming Simulator <span style="color:#f0a040;font-size:0.8em;">(Tier 3 Swing Model)</span></div>
+                <div class="subtitle">Terraforming Simulator <span style="color:#f0a040;font-size:0.8em;">(AltSwing v3 + AltMirror)</span></div>
             </div>
         </header>
 
@@ -629,7 +629,7 @@
                             margin-bottom: 8px;
                         "
                     >
-                        Strength = 0.216 / (d²·Δd²) per station.
+                        Planet-orbiting mirror. Strength = A / (π·R²). f_coupling=1.
                     </div>
                     <div class="orbit-grid" id="mirror-inputs"></div>
                     <div
@@ -645,6 +645,11 @@
                     <div class="resource-grid" id="resource-inputs"></div>
                 </div>
 
+                <div style="display: flex; gap: 8px; margin-top: 8px; align-items: center;">
+                    <label style="font-size:11px;color:var(--text-dim);cursor:pointer;">
+                        <input type="checkbox" id="asym-mode" onchange="calculate()" style="cursor:pointer;"> Asymmetric mode (T_hot/T_cold for phases & UI)
+                    </label>
+                </div>
                 <div style="display: flex; gap: 8px">
                     <button
                         class="defaults-btn"
@@ -694,24 +699,24 @@
                 OCEAN_DEPTH: 3911.0, // ObjectInfo.oceanDepth (m)
                 SURF_WATER_COV: 0.7, // surfaceWaterCoverage
                 EARTH_OC_WEIGHT: 1.4e18, // earthOceanWeight (tonnes reference)
-                MIRROR_PARAM: 0.216, // build_terraform_space_mirror specialAbilityParameter
                 SHADE_PARAM: 0.006, // |build_terraform_space_shade specialAbilityParameter|
-                DIST_PARAM: 1.0, // strengthParameterFromDistanceToTarget
-                NORMAL_HEAT_DEPTH: 0.2, // normalHeatDepth (ScriptableObject override)
                 ATM_PERCENTAGE: 0.01, // atmospherePercentage
                 WATER_HC_PARAM: 4186000, // waterHeatCapacityParameter
                 MIN_SURF_COV: 1e-8, // minSurfaceCoverage (ScriptableObject override)
                 EARTH_TEMP_SWING: 50.0, // earthTemperatureSwing (K)
                 GRAV_THRESHOLD: 0.08, // gravityLowerThreshold
                 SAT_MAX_CHANGE: 0.1, // saturationMaxChange
-                HC_ROCK_BASE: 200000.0, // heatCapacityRockBase (global TerraformationConfig constant)
+                HC_ROCK_BASE: 50000.0, // BASE_ROCK_HC — rock HC at 1-day rotation (J/m²·K), scaled by √P_rot in code
                 MIN_KELWIN: -273.15, // minKelwin (offset Celsius↔Kelvin)
                 PRESSURE_SCALING: 1.0, // pressureScalingParameter
-                // ── Tier 3 swing model constants ──────────────────────────
-                T_REF: 254.5, // Reference T_eq at 1 AU (Earth albedo 0.3, no mirrors/shades)
-                ROT_FACTOR_EARTH: 0.786, // rotFactor for Earth calibration point (P=1d, HC=200k, T_eq=254.5K)
-                K_HEAT_TRANSPORT: 0.05, // Atmospheric heat transport coefficient (pressure-based)
-                HEAT_TRANSPORT_EXP: 1.5, // Exponent for pressure in heat transport damping
+                // ── AltSwing asymmetric model constants ─────────────────
+                DAY_CEILING: 0.414, // 4^0.25 - 1 — max fractional hot-side rise above T_eq
+                NIGHT_FLOOR: 0.75, // fractional cold-side drop below T_eq (rough estimation)
+                TRANSPORT_REF: 100000.0, // reference columnMass*P_rot for f_transport=0.5
+                TRANSPORT_POWER: 250.0, // max atmospheric transport power at 1 atm N₂/O₂ (W/m²)
+                MIRROR_REDIST: 0.5, // fraction of mirror output redirected to night side
+                SEC_PER_DAY: 86400.0, // seconds per day
+                NORMAL_HEAT_DEPTH: 0.5, // ocean mixing depth at 1-day rotation (m), scaled by √P_rot in code
                 // ───────────────────────────────────────────────────────────
             };
             const TICK = {
@@ -720,19 +725,6 @@
                 BATCH: 150,
                 MAX: 1000,
             };
-
-            // ═══════════════════════════════════════════════════════════════
-            // MIRROR ORBIT DEFINITIONS
-            // Solar orbit distance hardcoded in DistanceToSunInAU getter:
-            //   if (objectTypes == EObjectTypes.SolarOrbit) result = 0.01f;
-            // ═══════════════════════════════════════════════════════════════
-            const MIRROR_ORBITS = [
-                { name: "Solar", au: 0.01, emoji: "☀️" },
-                { name: "Mercury", au: 0.387099, emoji: "🌑" },
-                { name: "Venus", au: 0.723336, emoji: "⚪" },
-                { name: "Earth", au: 1.000001, emoji: "🔵" },
-                { name: "Mars", au: 1.52371, emoji: "🔴" },
-            ];
 
             // ═══════════════════════════════════════════════════════════════
             // RESOURCE DATA (from sharedassets0.assets)
@@ -943,35 +935,35 @@
             //          heatCapacityRock, water, radiation, magneticField,
             //          radiusKm, mass1E24, rotationPeriod, distanceAU, oceanDepth
             // ═══════════════════════════════════════════════════════════════
-            const CSV_DATA = `id,name,objectType,gravity,albedo,internalFlux,heatCapacityRock,water,radiation,magneticFieldVisualization,radiusKm,mass1E24,rotationPeriod,distanceAU,oceanDepth,diameter
-0,SUN,Other,274,0,0,0,0,100000,100000,45383.51953125,1989000,1,1,3911,
-8,PLUTO,Planet,0,0.72,0.08,50000,0,1.5,2.5,1188000,0.0138999996706843,6.375,39.482120513916,3911,
-10,MERCURY,Planet,0,0.09,0.08,200000,0,30,15,2439700,0.330099999904633,58,0.387099295854568,3911,
-24,VENUS,Planet,0,0.76,0.08,200000,0,0,10,6051800,4.86700010299683,121.499977111816,0.723335683345795,3911,
-56,JUPITER,Planet,0,0.34,0.5,200000,0,1500,1000,71492000,1898.09997558594,0.416666686534882,5.20288705825806,3911,
-59,MARS,Planet,0,0.25,0.08,50000,0,10,10,3396190,0.641600012779236,1.02083349227905,1.52371001243591,3911,
-66,EARTH,Planet,0,0.29,0.08,200000,0,1,40,6378140,5.97200012207031,0.999999940395355,1.00000095367432,3911,
-68,NEPTUNE,Planet,0,0.29,0.08,50000,0,7200,60,24622000,102.400001525879,0.666666686534882,30.0699195861816,3911,
-73,SATURN,Planet,0,0.34,0.5,200000,0,900,500,60288000,568.340026855469,0.437499970197678,9.53667640686035,3911,
-74,URANUS,Planet,0,0.3,0.5,50000,0,7000,80,25362000,86.8099975585938,0.708333313465118,19.1891708374023,3911,
-86,1 CERES,Asteroid,0,0.04,0.08,50000,0,5,2.5,455000,0.000937999982852489,0.375,2.76797246932983,3911,0.3155799
-87,LUNA,Moons,0,0.11,0.01,50000,0,12,2.5,1737400,0.0734200030565262,1,1.00000095367432,3911,
-91,IO,Moons,0,0.63,0.4,200000,0,1000,2.5,1821500,0.0892999991774559,1,5.20288705825806,3911,
-92,EUROPA,Moons,0,0.67,0.08,200000,0,150,2.5,1561000,0.0480000004172325,1,5.20288705825806,3911,
-93,GANYMEDE,Moons,0,0.43,0.08,200000,0,30,25,2631000,0.148100003600121,1,5.20288705825806,3911,
-94,CALLISTO,Moons,0,0.2,0.08,50000,0,15,2.5,2410500,0.107500001788139,1,5.20288705825806,3911,
-97,RHEA,Moons,0,0.95,0.08,50000,0,10,2.5,763500,0.00230000005103648,1,9.53667640686035,3911,
-98,TITAN,Moons,0,0.21,0.08,50000,0,1,2.5,2574500,0.134499996900558,1,9.53667640686035,3911,
-99,DIONE,Moons,0,0.7,0.08,50000,0,12,2.5,564000,0.00109000003430992,1,9.53667640686035,3911,
-100,TETHYS,Moons,0,0.8,0.08,50000,0,12,2.5,531000,0.000600000028498471,1,9.53667640686035,3911,
-101,ENCELADUS,Moons,0,0.9,0.08,50000,0,12,2.5,252000,0.000108000000182074,1,9.53667640686035,3911,
-106,TITANIA,Moons,0,0.35,0.08,50000,0,1.5,2.5,788000,0.00340000004507601,1,19.1891708374023,3911,
-107,OBERON,Moons,0,0.31,0.08,50000,0,1.5,2.5,761000,0.00300000002607703,1,19.1891708374023,3911,
-108,UMBRIEL,Moons,0,0.26,0.08,50000,0,1.5,2.5,584500,0.00120000005699694,1,19.1891708374023,3911,
-109,ARIEL,Moons,0,0.53,0.08,50000,0,1.5,2.5,578500,0.00120000005699694,1,19.1891708374023,3911,
-113,TRITON,Moons,0,0.9,0.08,50000,0,1.5,2.5,1353000,0.0214000009000301,1,30.0699195861816,3911,
-116,CHARON,Moons,0,0.41,0.08,50000,0,1.5,2.5,606000,0.00150000001303852,1,39.482120513916,3911,
-229,IAPETUS,Moons,0,0.2,0.08,50000,0,1.5,2.5,735000,0.00179999996908009,1,9.53667640686035,3911,`;
+            const CSV_DATA = `id,name,objectType,gravity,albedo,internalFlux,heatCapacityRock,water,radiation,magneticFieldVisualization,radiusKm,mass1E24,rotationPeriod,distanceAU,oceanDepth
+0,SUN,Other,274,0,0,0,0,100000,100000,45383.51953125,1989000,1,1,3911
+8,PLUTO,Planet,0,0.72,0.08,50000,0,1.5,2.5,1188000,0.0138999996706843,6.375,39.482120513916,3911
+10,MERCURY,Planet,0,0.09,0.08,200000,0,30,15,2439700,0.330099999904633,58,0.387099295854568,3911
+24,VENUS,Planet,0,0.76,0.08,200000,0,0,10,6051800,4.86700010299683,121.499977111816,0.723335683345795,3911
+56,JUPITER,Planet,0,0.34,0.5,200000,0,1500,1000,71492000,1898.09997558594,0.416666686534882,5.20288705825806,3911
+59,MARS,Planet,0,0.25,0.08,50000,0,10,10,3396190,0.641600012779236,1.02083349227905,1.52371001243591,3911
+66,EARTH,Planet,0,0.29,0.08,200000,0,1,40,6378140,5.97200012207031,0.999999940395355,1.00000095367432,3911
+68,NEPTUNE,Planet,0,0.29,0.08,50000,0,7200,60,24622000,102.400001525879,0.666666686534882,30.0699195861816,3911
+73,SATURN,Planet,0,0.34,0.5,200000,0,900,500,60288000,568.340026855469,0.437499970197678,9.53667640686035,3911
+74,URANUS,Planet,0,0.3,0.5,50000,0,7000,80,25362000,86.8099975585938,0.708333313465118,19.1891708374023,3911
+86,1 CERES,Asteroid,0,0.04,0.08,50000,0,5,2.5,455000,0.000937999982852489,0.375,2.76797246932983,3911
+87,LUNA,Moons,0,0.11,0.01,50000,0,12,2.5,1737400,0.0734200030565262,1,1.00000095367432,3911
+91,IO,Moons,0,0.63,0.4,200000,0,1000,2.5,1821500,0.0892999991774559,1,5.20288705825806,3911
+92,EUROPA,Moons,0,0.67,0.08,200000,0,150,2.5,1561000,0.0480000004172325,1,5.20288705825806,3911
+93,GANYMEDE,Moons,0,0.43,0.08,200000,0,30,25,2631000,0.148100003600121,1,5.20288705825806,3911
+94,CALLISTO,Moons,0,0.2,0.08,50000,0,15,2.5,2410500,0.107500001788139,1,5.20288705825806,3911
+97,RHEA,Moons,0,0.95,0.08,50000,0,10,2.5,763500,0.00230000005103648,1,9.53667640686035,3911
+98,TITAN,Moons,0,0.21,0.08,50000,0,1,2.5,2574500,0.134499996900558,1,9.53667640686035,3911
+99,DIONE,Moons,0,0.7,0.08,50000,0,12,2.5,564000,0.00109000003430992,1,9.53667640686035,3911
+100,TETHYS,Moons,0,0.8,0.08,50000,0,12,2.5,531000,0.000600000028498471,1,9.53667640686035,3911
+101,ENCELADUS,Moons,0,0.9,0.08,50000,0,12,2.5,252000,0.000108000000182074,1,9.53667640686035,3911
+106,TITANIA,Moons,0,0.35,0.08,50000,0,1.5,2.5,788000,0.00340000004507601,1,19.1891708374023,3911
+107,OBERON,Moons,0,0.31,0.08,50000,0,1.5,2.5,761000,0.00300000002607703,1,19.1891708374023,3911
+108,UMBRIEL,Moons,0,0.26,0.08,50000,0,1.5,2.5,584500,0.00120000005699694,1,19.1891708374023,3911
+109,ARIEL,Moons,0,0.53,0.08,50000,0,1.5,2.5,578500,0.00120000005699694,1,19.1891708374023,3911
+113,TRITON,Moons,0,0.9,0.08,50000,0,1.5,2.5,1353000,0.0214000009000301,1,30.0699195861816,3911
+116,CHARON,Moons,0,0.41,0.08,50000,0,1.5,2.5,606000,0.00150000001303852,1,39.482120513916,3911
+229,IAPETUS,Moons,0,0.2,0.08,50000,0,1.5,2.5,735000,0.00179999996908009,1,9.53667640686035,3911`;
 
             // ═══════════════════════════════════════════════════════════════
             // PARSE CSV
@@ -1005,13 +997,6 @@
                     p.computedGravity = p.gravity;
                 }
                 p.surface = 4 * Math.PI * p.radiusKm * p.radiusKm;
-                // Towed-asteroid surface (SolarBody-null fallback, see docs/GAME_MECHANICS_FINDINGS.md §11b)
-                const d = p.diameter;
-                const dKm = (d !== undefined && d !== null && d !== "" && !isNaN(d))
-                    ? Number(d) : (2 * p.radiusKm / 1000);
-                p.diameterKm = dKm;
-                const rTowed = dKm * 1000 / 2;
-                p.surfaceTowed = 4 * Math.PI * rTowed * rTowed;
             });
 
             // ═══════════════════════════════════════════════════════════════
@@ -1053,7 +1038,7 @@
             // ═══════════════════════════════════════════════════════════════
             function simulate(
                 planet,
-                mirrorCounts,
+                mirrorCount,
                 shadeCount,
                 resourceKt,
                 effectiveDistAU,
@@ -1067,14 +1052,7 @@
                 }
 
                 const R_m = planet.radiusKm;
-                // Towed asteroids lose SolarBody after pre-warm (confirmed via
-                // BepInEx diagnostic). Normal Surface during pre-warm, bugged
-                // diameter-based Surface during gameplay.
-                const isTowed =
-                    effectiveDistAU !== undefined &&
-                    Math.abs(effectiveDistAU - planet.distanceAU) > 1e-6 &&
-                    planet.objectType === "Asteroid";
-                let surface = planet.surface; // starts normal, switches to towed after pre-warm
+                const surface = planet.surface;
                 const distAU =
                     effectiveDistAU !== undefined
                         ? effectiveDistAU
@@ -1082,44 +1060,40 @@
                 const distM = distAU * C.AU_TO_M;
 
                 // ── Mirror & shade strengths ──────────────────────────────────
-                // GetFinalStrengthForObject: strength = param / (d_mirror² × d_diff²) × count
-                // d_diff = |d_mirror − d_target| / strengthParam  (or 1.0 if same orbit)
-                let mirrorsStrength = 0;
-                MIRROR_ORBITS.forEach((orbit, i) => {
-                    const count = mirrorCounts[i] || 0;
-                    if (count <= 0) return;
-                    const dM = orbit.au;
-                    const dT = distAU;
-                    const sameOrbit = Math.abs(dM - dT) < 1e-4;
-                    const dDiff = sameOrbit ? 1.0 : (dM - dT) / C.DIST_PARAM;
-                    const perMirror =
-                        C.MIRROR_PARAM / (dM * dM * dDiff * dDiff);
-                    mirrorsStrength += perMirror * count;
-                });
-                const shadesStrength = shadeCount * C.SHADE_PARAM;
+                // AltMirror: planet-orbiting mirror, Regime B (f_coupling=1)
+                // strength = A_mirror / (π × R_planet²) per station
+                // Note: planet.radiusKm is actually in metres despite the name
+                const aEl = document.getElementById("mirror-area");
+                const areaMkm2 = aEl ? (parseFloat(aEl.value) || 40) : 40;
+                const A = areaMkm2 * 1e12; // million km² → m²
+                const perMirror = A / (Math.PI * R_m * R_m);
+                const mirrorsStrength = perMirror * (mirrorCount || 0);
+                const shadesStrength = (shadeCount || 0) * C.SHADE_PARAM;
 
                 // ── Solar absorbed flux (W/m²) ──────────────────────────────────
-                // Game does NOT clamp (1-shadesStrength) in UpdateTemperature.
-                // shadesStrength > 1 → absorbed flux goes negative (displayed dark blue).
                 const L = C.SOLAR_FLUX * C.STAR_LUM;
-                const absorbed =
-                    ((L * (1 + mirrorsStrength) * (1 - shadesStrength)) /
-                        (4 * Math.PI * distM * distM)) *
-                    (1 - planet.albedo);
+                const baseFlux = (L / (4 * Math.PI * distM * distM)) * (1 - planet.albedo);
+                // Mirrors split their output: (1-MIRROR_REDIST) to day, MIRROR_REDIST to night
+                const fluxDay   = baseFlux * (1 + mirrorsStrength * (1 - C.MIRROR_REDIST)) * (1 - shadesStrength);
+                const fluxNight = baseFlux * (mirrorsStrength * C.MIRROR_REDIST) * (1 - shadesStrength);
+                // Global average (for display)
+                const absorbed = baseFlux * (1 + mirrorsStrength) * (1 - shadesStrength);
                 const internalFlux = planet.internalFlux;
 
-                // ── Equilibrium temperature (no atmosphere) ───────────────────
+                // ── Equilibrium temperatures (per hemisphere) ────────────────
                 const T_eq = Math.pow(
-                    Math.max(
-                        absorbed / (4 * C.SIGMA),
-                        internalFlux / (4 * C.SIGMA),
-                    ),
-                    0.25,
-                );
+                    Math.max(absorbed / (4 * C.SIGMA), internalFlux / (4 * C.SIGMA)), 0.25);
+                const T_eq_day = Math.pow(
+                    Math.max(fluxDay / (4 * C.SIGMA), internalFlux / (4 * C.SIGMA)), 0.25);
+                const T_eq_night = Math.pow(
+                    Math.max(fluxNight / (4 * C.SIGMA), internalFlux / (4 * C.SIGMA)), 0.25);
+                // Shaded, unmirrored equilibrium (night floor — shades lower it, mirrors don't inflate it)
+                const T_eq_base = Math.pow(
+                    Math.max(baseFlux * (1 - shadesStrength) / (4 * C.SIGMA), internalFlux / (4 * C.SIGMA)), 0.25);
 
                 // ── Pressure constant ─────────────────────────────────────────
                 // pressure = K × M_atm^(1/gasScaling), K = 1000g / surface / 101325
-                let K_pressure = (1000.0 * g) / surface / 101325.0;
+                const K_pressure = (1000.0 * g) / surface / 101325.0;
 
                 // ── Convert user inputs from kt to tonnes ─────────────────────
                 const resourceTonnes = {};
@@ -1150,11 +1124,22 @@
                 let temperatureC = 0;
                 let temperatureK = 0;
                 let swings = 0;
+                let swingHot = 0;
+                let swingCold = 0;
+                let T_hot = 0;
+                let T_cold = 0;
+                let fRot = 0;
+                let fTransport = 0;
+                let cpAtmState = 1000;
+                let contrast = 0;
+                let origTatm = 0;
                 let lastTick = 0;
                 let converged = false;
                 let tau = 0;
                 let prevGasFracs = {}; let prevPvaps = {}; let stableCount = 0;
                 let emissivity = 0;
+                let T_dayRaw = 0;
+                let T_nightRaw = 0;
 
                 // ── Cold-start for liquid-rich initial state ────────────────
                 // When the user seeds liquid water (matching a game save),
@@ -1163,24 +1148,15 @@
                 const liquidWaterInit = deposits["water"] ? deposits["water"].liquid : 0;
                 if (liquidWaterInit > 0) {
                     const whd = Math.min(
-                        C.NORMAL_HEAT_DEPTH,
+                        C.NORMAL_HEAT_DEPTH * Math.sqrt(planet.rotationPeriod),
                         (Math.pow(liquidWaterInit, C.WATER_SCALING) * 1000.0 +
                             surface * C.MIN_SURF_COV) / surface,
                     );
                     const hcOcean = C.WATER_HC_PARAM * whd * C.SURF_WATER_COV;
-                    totalHC = planet.heatCapacityRock + hcOcean;
-                    // Tier 3 swing model
-                    const denom_cs = 4 * C.SIGMA * Math.pow(Math.max(T_eq, 1e-10), 3) * 86400;
-                    const tauRadDays_cs = totalHC / denom_cs;
-                    const pRatio_cs = Math.max(0, planet.rotationPeriod) / Math.max(tauRadDays_cs, 1e-30);
-                    const rotFactor_cs = Math.sqrt(pRatio_cs / (1 + pRatio_cs));
-                    const fluxFactor_cs = T_eq / C.T_REF;
+                    totalHC = C.HC_ROCK_BASE * Math.sqrt(planet.rotationPeriod) + hcOcean;
+                    // Cold-start swing estimate
                     const hcDamping_cs = totalHC > 0 ? Math.sqrt(C.HC_ROCK_BASE / totalHC) : 1;
-                    swings =
-                        C.EARTH_TEMP_SWING *
-                        fluxFactor_cs *
-                        (rotFactor_cs / C.ROT_FACTOR_EARTH) *
-                        hcDamping_cs;
+                    swings = C.EARTH_TEMP_SWING * Math.sqrt(planet.rotationPeriod) * hcDamping_cs;
                     temperatureK = T_eq;
                     temperatureC = T_eq + C.MIN_KELWIN;
                     temperatureWithAtmOld = T_eq;
@@ -1288,7 +1264,7 @@
                         ? deposits["water"].liquid
                         : 0;
                     const waterHeatDepth = Math.min(
-                        C.NORMAL_HEAT_DEPTH,
+                        C.NORMAL_HEAT_DEPTH * Math.sqrt(planet.rotationPeriod),
                         (Math.pow(liquidWater, C.WATER_SCALING) * 1000.0 +
                             surface * C.MIN_SURF_COV) /
                             surface,
@@ -1309,7 +1285,7 @@
                     }
 
                     const newTotalHC =
-                        planet.heatCapacityRock + hcOcean + hcAtm;
+                        C.HC_ROCK_BASE * Math.sqrt(planet.rotationPeriod) + hcOcean + hcAtm;
                     // Force prevHC = totalHC so √(prevHC/totalHC) = 1 always.
                     // The game only updates prevHC when totalHC changes, which causes the
                     // swing to be distorted when resources are added all at once. As a
@@ -1317,29 +1293,75 @@
                     prevHC = newTotalHC;
                     totalHC = newTotalHC;
 
-                    // 4. UpdateTemperatureSwings (Tier 3 model)
-                    // Radiative cooling timescale (days)
-                    // Uses epsilon on T_eq^3 to handle edge cases:
-                    //   totalHC=0 -> tauRad=0 -> instant response -> max swing
-                    //   T_eq~0    -> tauRad=Inf -> no flux -> no swing
-                    const denom = 4 * C.SIGMA * Math.pow(Math.max(T_eq, 1e-10), 3) * 86400;
-                    const tauRadDays = totalHC / denom;
-                    const pRatio = Math.max(0, planet.rotationPeriod) / Math.max(tauRadDays, 1e-30);
-                    const rotFactor = Math.sqrt(pRatio / (1 + pRatio));
-                    const fluxFactor = T_eq / C.T_REF;
-                    const hcDamping = totalHC > 0 ? Math.sqrt(C.HC_ROCK_BASE / totalHC) : 1;
-                    const atmTransport = 1 / (1 + C.K_HEAT_TRANSPORT * Math.pow(pressure, C.HEAT_TRANSPORT_EXP));
-                    swings =
-                        C.EARTH_TEMP_SWING *
-                        fluxFactor *
-                        (rotFactor / C.ROT_FACTOR_EARTH) *
-                        hcDamping *
-                        atmTransport;
+                    // 4. UpdateTemperatureSwings (asymmetric model)
+                    // ── Radiative cooling timescale ─────────────────────
+                    const tauRadSec = totalHC > 0 && T_eq > 0
+                        ? totalHC / (4 * C.SIGMA * Math.pow(T_eq, 3))
+                        : 0;
+                    const tauRadDays = tauRadSec / C.SEC_PER_DAY;
 
-                    // 5. UpdateDepositStates
-                    const T_hot = temperatureK + swings;
-                    const T_cold = temperatureK - swings;
-                    const swingEff = Math.max(swings, 1e-6);
+                    // ── Rotation factor: how close each hemisphere gets to its limit ──
+                    fRot = 1 - Math.exp(
+                        -Math.max(0, planet.rotationPeriod) / (2 * Math.max(tauRadDays, 1e-30))
+                    );
+
+                    // ── Vacuum-limit extremes ───────────────────────────
+                    // Contrast: how one-sided is the illumination? 0=uniform, 1=full day/night
+                    const T_hot_raw  = Math.max(T_eq_day, T_eq_night);
+                    const T_cold_raw = Math.min(T_eq_day, T_eq_night);
+                    contrast = (Math.pow(T_hot_raw, 4) - Math.pow(T_cold_raw, 4))
+                             / (Math.pow(T_hot_raw, 4) + Math.pow(T_cold_raw, 4));
+                    const effDay   = C.DAY_CEILING * contrast;
+                    const effNight = C.NIGHT_FLOOR * contrast;
+                    // Both hemispheres use global T_eq as the radiative baseline.
+                    // Mirrors reduce contrast → less one-sided → smaller extremes.
+                    T_dayRaw   = T_eq * (1 + effDay   * fRot);
+                    T_nightRaw = T_eq * (1 - effNight * fRot);
+
+                    // ── Atmospheric heat transport ──────────────────────
+                    // columnMass = total atmospheric load (kg/m²)
+                    // P_rot = rotation period (days)
+                    // More mass × more time = more capacity to move heat day→night
+                    const columnMass = pressure * 101325.0 / g;
+                    const transportCapacity = columnMass * planet.rotationPeriod;
+                    const fTransRaw = transportCapacity / (transportCapacity + C.TRANSPORT_REF);
+                    // Cap: atmosphere has finite transport power, can't outrun solar input
+                    // Scale by atmospheric specific heat capacity relative to N₂/O₂ (cp≈1000)
+                    let cpAtm = 1000; // default Earth-like
+                    if (currentAtmMass > 0) {
+                        let sumCp = 0;
+                        RESOURCES.forEach(r2 => {
+                            if (gasAmts[r2.id] > 0) sumCp += (gasAmts[r2.id] / currentAtmMass) * (r2.heatCap || 1000);
+                        });
+                        if (sumCp > 0) cpAtm = sumCp;
+                    }
+                    const transportPower = C.TRANSPORT_POWER * pressure * (cpAtm / 1000);
+                    cpAtmState = cpAtm;
+                    const fTransMax = transportPower / (absorbed + transportPower);
+                    fTransport = Math.min(fTransRaw, fTransMax);
+
+                    // ── Mix with atmospheric mean temperature ────────────
+                    // (mirror redistribution is already baked into T_eq_day/T_eq_night)
+                    const T_atm = temperatureK; // current greenhouse-warmed mean (K)
+                    origTatm = T_atm;
+                    // Greenhouse warming is spatially uniform — apply to both raw extremes
+                    const deltaGh = T_atm - T_eq;
+                    const T_dayGh  = T_dayRaw  + deltaGh;
+                    const T_nightGh = T_nightRaw + deltaGh;
+                    // Mix hot and cold sides toward the mean (atmosphere)
+                    T_hot  = T_dayGh  + (T_atm - T_dayGh)  * fTransport;
+                    T_cold = T_nightGh + (T_atm - T_nightGh) * fTransport;
+
+                    // ── Asymmetric swing components ─────────────────────
+                    swingHot  = T_hot  - T_atm;
+                    swingCold = T_atm - T_cold;
+
+                    // Recalculated for output: true mean and half-range
+                    // (temperature ± swings) = (T_hot, T_cold)
+                    swings = (T_hot - T_cold) / 2;
+
+                    // 5. UpdateDepositStates — use asymmetric T_hot/T_cold
+                    const swingEff = Math.max(swingHot, swingCold, 1e-6);
                     const newDeposits = {};
 
                     RESOURCES.forEach((r) => {
@@ -1478,14 +1500,6 @@
                         converged = true;
                         break;
                     }
-                    // Towed asteroids: switch to bugged surface at end of pre-warm.
-                    // Matches game: SolarBody destroyed after AfterLoadState loop.
-                    if (isTowed && tick === PREWARM_TICKS - 1 && surface === planet.surface) {
-                        surface = planet.surfaceTowed;
-                        K_pressure = (1000.0 * g) / surface / 101325.0;
-                        stableCount = 0;
-                        prevGasFracs = {}; prevPvaps = {};
-                    }
                 }
 
                 // ── Water result ──────────────────────────────────────────────
@@ -1518,12 +1532,34 @@
                 const oxygenMassFrac =
                     totalAtmMass > 0 ? oxygenGasMass / totalAtmMass : 0;
 
+                // Recalculated temperature: true mean (not equilibrium)
+                // In asymmetric mode, leave temperature as-is (game's value)
+                const asymEl = typeof document !== 'undefined' ? document.getElementById("asym-mode") : null;
+                const asymMode = asymEl ? asymEl.checked : false;
+                let outTempC, outTempK, outSwing, outTmin, outTmax;
+                if (asymMode) {
+                    outTempC = temperatureC;
+                    outTempK = temperatureK;
+                    outSwing = (T_hot - T_cold) / 2;
+                    outTmin = Math.max(C.MIN_KELWIN, T_cold + C.MIN_KELWIN);
+                    outTmax = T_hot + C.MIN_KELWIN;
+                } else {
+                    const recalcTempK = (T_hot + T_cold) / 2;
+                    const recalcTempC = recalcTempK + C.MIN_KELWIN;
+                    outTempC = recalcTempC;
+                    outTempK = recalcTempK;
+                    outSwing = (T_hot - T_cold) / 2;
+                    outTmin = recalcTempC - outSwing;
+                    outTmax = recalcTempC + outSwing;
+                }
+
                 return {
-                    temperature: temperatureC,
-                    temperatureK,
-                    swings,
-                    tMin: Math.max(C.MIN_KELWIN, temperatureC - swings),
-                    tMax: temperatureC + swings,
+                    temperature: outTempC,
+                    temperatureK: outTempK,
+                    origTatm: origTatm,
+                    swings: outSwing,
+                    tMin: outTmin,
+                    tMax: outTmax,
                     pressure,
                     tau,
                     emissivity,
@@ -1544,11 +1580,20 @@
                     gravity: g,
                     surface,
                     oxygenMassFrac,
-                    // Tier 3 swing diagnostics
+                    // AltSwing asymmetric diagnostics
                     totalHC,
-                    swingFluxFactor: T_eq / C.T_REF,
-                    swingHcDamping: totalHC > 0 ? Math.sqrt(C.HC_ROCK_BASE / totalHC) : 1,
-                    swingAtmTransport: 1 / (1 + C.K_HEAT_TRANSPORT * Math.pow(pressure, C.HEAT_TRANSPORT_EXP)),
+                    rotPeriod: planet.rotationPeriod,
+                    tauRadDays: totalHC > 0 && T_eq > 0 ? totalHC / (4 * C.SIGMA * Math.pow(T_eq, 3) * C.SEC_PER_DAY) : 0,
+                    fRot,
+                    fTransport,
+                    fTransMax: pressure > 0 ? (C.TRANSPORT_POWER * pressure * (cpAtmState / 1000)) / (absorbed + C.TRANSPORT_POWER * pressure * (cpAtmState / 1000)) : 0,
+                    contrast,
+                    T_eq_day: T_eq_day + C.MIN_KELWIN,
+                    T_eq_night: T_eq_night + C.MIN_KELWIN,
+                    swingHot,
+                    swingCold,
+                    T_dayRaw,
+                    T_nightRaw,
                 };
             }
 
@@ -1571,17 +1616,17 @@
             }
 
 
-            function startLiveSim(planet, mirrorCounts, shadeCount, resourceKt, effDist, opts) {
+            function startLiveSim(planet, mirrorCount, shadeCount, resourceKt, effDist, opts) {
                 stopLiveSim();
                 const MAX_BATCH = TICK.BATCH;
                 const MAX_TOTAL = TICK.MAX;
 
                 // Phase 1: run batch ticks instantly
                 const batchTicks = Math.max(MAX_BATCH, 1);
-                let r = simulate(planet, mirrorCounts, shadeCount, resourceKt, effDist, { ...opts, maxTicks: batchTicks });
+                let r = simulate(planet, mirrorCount, shadeCount, resourceKt, effDist, { ...opts, maxTicks: batchTicks });
                 r._planet = planet;
                 r._resourceKt = resourceKt;
-                r._mirrorCounts = mirrorCounts;
+                r._mirrorCount = mirrorCount;
                 r._shadeCount = shadeCount;
                 r._effDist = effDist;
                 r._tickCount = batchTicks;
@@ -1600,7 +1645,7 @@
                                     liveSimState._tickCount++;
                                     const fresh = simulate(
                                         liveSimState._planet,
-                                        liveSimState._mirrorCounts,
+                                        liveSimState._mirrorCount,
                                         liveSimState._shadeCount,
                                         liveSimState._resourceKt,
                                         liveSimState._effDist,
@@ -1608,7 +1653,7 @@
                                     );
                     fresh._planet = liveSimState._planet;
                     fresh._resourceKt = liveSimState._resourceKt;
-                    fresh._mirrorCounts = liveSimState._mirrorCounts;
+                    fresh._mirrorCount = liveSimState._mirrorCount;
                     fresh._shadeCount = liveSimState._shadeCount;
                     fresh._effDist = liveSimState._effDist;
                     fresh._tickCount = liveSimState._tickCount;
@@ -1785,13 +1830,9 @@
                 const canTf = g >= C.GRAV_THRESHOLD;
                 const effDist = getEffectiveDistanceAU();
                 const isAsteroid = p.objectType === "Asteroid";
-                const isTowed = isAsteroid &&
-                    Math.abs(effDist - p.distanceAU) > 1e-6;
-                const radiusKm = isTowed ? (p.diameterKm / 2) : (p.radiusKm / 1000);
-                const radiusUnit = isTowed ? "m" : "Mm";
-                const radiusDisplay = isTowed
-                    ? (radiusKm * 1000).toFixed(0)
-                    : radiusKm.toFixed(2);
+                const radiusKm = p.radiusKm / 1000;
+                const radiusDisplay = radiusKm.toFixed(2);
+                const radiusUnit = "Mm";
                 document.getElementById("planet-stats").innerHTML = `
     <div class="stat-box"><div class="label">Gravity</div>
       <div class="value" style="color:${canTf ? "" : "var(--red)"}">
@@ -1806,7 +1847,7 @@
     <div class="stat-box"><div class="label">Rotation Period</div>
       <div class="value">${Number(p.rotationPeriod.toFixed(3))} days</div></div>
     <div class="stat-box"><div class="label">HC Rock</div>
-      <div class="value">${(p.heatCapacityRock / 1000).toFixed(0)} kJ/kg·K</div></div>
+      <div class="value">${(C.HC_ROCK_BASE * Math.sqrt(p.rotationPeriod) / 1000).toFixed(0)} kJ/m²·K</div></div>
   `;
 
                 // Show/hide orbit selector for asteroids
@@ -1832,53 +1873,84 @@
             // ═══════════════════════════════════════════════════════════════
             function buildMirrorInputs() {
                 const container = document.getElementById("mirror-inputs");
-                MIRROR_ORBITS.forEach((orbit, i) => {
-                    const label = document.createElement("span");
-                    label.className = "orbit-label";
-                    label.textContent = `${orbit.emoji} ${orbit.name} `;
-                    const au = document.createElement("span");
-                    au.className = "au";
-                    au.textContent = `(${orbit.au.toFixed(3)} AU)`;
-                    label.appendChild(au);
 
-                    const wrapper = document.createElement("div");
-                    wrapper.style.cssText =
-                        "display:flex;gap:4px;align-items:center;";
+                // Mirror area input
+                const aLabel = document.createElement("span");
+                aLabel.className = "orbit-label";
+                aLabel.textContent = "📐 Area, M km²";
 
-                    const btnMinus = document.createElement("button");
-                    btnMinus.className = "stepper-btn";
-                    btnMinus.textContent = "−";
-                    btnMinus.onclick = () => stepMirror(-1, `mirror-${i}`);
+                const aWrapper = document.createElement("div");
+                aWrapper.style.cssText = "display:flex;gap:4px;align-items:center;";
 
-                    const input = document.createElement("input");
-                    input.type = "number";
-                    input.id = `mirror-${i}`;
-                    input.min = 0;
-                    input.value = 0;
-                    input.step = 1;
-                    input.placeholder = "0";
-                    input.style.flex = "1";
-                    input.addEventListener("input", calculate);
+                const aBtnMinus = document.createElement("button");
+                aBtnMinus.className = "stepper-btn";
+                aBtnMinus.textContent = "−";
+                aBtnMinus.onclick = () => stepMirror(-1, "mirror-area", 5);
 
-                    const btnPlus = document.createElement("button");
-                    btnPlus.className = "stepper-btn";
-                    btnPlus.textContent = "+";
-                    btnPlus.onclick = () => stepMirror(1, `mirror-${i}`);
+                const aInput = document.createElement("input");
+                aInput.type = "number";
+                aInput.id = "mirror-area";
+                aInput.min = 0.1;
+                aInput.value = 40;
+                aInput.step = "any";
+                aInput.placeholder = "40";
+                aInput.style.flex = "1";
+                aInput.addEventListener("input", () => { updateMirrorHints(getSelectedPlanet()); calculate(); });
 
-                    wrapper.appendChild(btnMinus);
-                    wrapper.appendChild(input);
-                    wrapper.appendChild(btnPlus);
+                const aBtnPlus = document.createElement("button");
+                aBtnPlus.className = "stepper-btn";
+                aBtnPlus.textContent = "+";
+                aBtnPlus.onclick = () => stepMirror(1, "mirror-area", 5);
 
-                    container.appendChild(label);
-                    container.appendChild(wrapper);
+                aWrapper.appendChild(aBtnMinus);
+                aWrapper.appendChild(aInput);
+                aWrapper.appendChild(aBtnPlus);
+                container.appendChild(aLabel);
+                container.appendChild(aWrapper);
 
-                    // Strength hint row — spans full grid width
-                    const hint = document.createElement("span");
-                    hint.id = `mirror-hint-${i}`;
-                    hint.className = "orbit-strength";
-                    hint.style.cssText = "grid-column:1/-1;font-size:10px;color:var(--accent);";
-                    container.appendChild(hint);
-                });
+                // Single mirror input (planet-orbiting)
+                const mLabel = document.createElement("span");
+                mLabel.className = "orbit-label";
+                mLabel.textContent = "☀️ Mirrors";
+
+                const mWrapper = document.createElement("div");
+                mWrapper.style.cssText =
+                    "display:flex;gap:4px;align-items:center;";
+
+                const btnMinus = document.createElement("button");
+                btnMinus.className = "stepper-btn";
+                btnMinus.textContent = "−";
+                btnMinus.onclick = () => stepMirror(-1, "mirror-count");
+
+                const input = document.createElement("input");
+                input.type = "number";
+                input.id = "mirror-count";
+                input.min = 0;
+                input.value = 0;
+                input.step = 1;
+                input.placeholder = "0";
+                input.style.flex = "1";
+                input.addEventListener("input", calculate);
+
+                const btnPlus = document.createElement("button");
+                btnPlus.className = "stepper-btn";
+                btnPlus.textContent = "+";
+                btnPlus.onclick = () => stepMirror(1, "mirror-count");
+
+                mWrapper.appendChild(btnMinus);
+                mWrapper.appendChild(input);
+                mWrapper.appendChild(btnPlus);
+
+                container.appendChild(mLabel);
+                container.appendChild(mWrapper);
+
+                // Hint on its own row below the mirror count
+                const mHint = document.createElement("span");
+                mHint.id = "mirror-hint";
+                mHint.className = "orbit-strength";
+                mHint.style.cssText = "grid-column:1/-1;font-size:10px;color:var(--accent);";
+                container.appendChild(mHint);
+
                 // Build shade row in the SAME grid so column widths align
                 const divider = document.getElementById("mirror-shade-divider");
                 if (divider) divider.style.display = "block";
@@ -1934,19 +2006,16 @@
             }
 
             function updateMirrorHints(planet) {
-              const dT = getEffectiveDistanceAU();
-              MIRROR_ORBITS.forEach((orbit, i) => {
-                  const hint = document.getElementById(`mirror-hint-${i}`);
-                  if (!hint) return;
-                  const dM = orbit.au;
-                  const sameOrbit = Math.abs(dM - dT) < 1e-4;
-                  const dDiff = sameOrbit ? 1.0 : Math.abs(dM - dT) / C.DIST_PARAM;
-                  const perMirror =
-                      C.MIRROR_PARAM / (dM * dM * dDiff * dDiff);
-                  hint.textContent =
-                      `${C.MIRROR_PARAM} / (${dM.toFixed(3)}² · ${dDiff.toFixed(3)}²) = +${perMirror.toFixed(3)}`;
-              });
-          }
+                const hint = document.getElementById("mirror-hint");
+                if (!hint) return;
+                const aEl = document.getElementById("mirror-area");
+                const areaMkm2 = aEl ? (parseFloat(aEl.value) || 40) : 40;
+                const A = areaMkm2 * 1e12; // million km² → m²
+                const perMirror = A / (Math.PI * planet.radiusKm * planet.radiusKm);
+                const Rk = (planet.radiusKm / 1000).toFixed(0) + " km";
+                hint.textContent =
+                    `${areaMkm2.toFixed(1)}M km² / (π·${Rk}²) = +${(perMirror*100).toFixed(2)}%`;
+            }
 
             // ═══════════════════════════════════════════════════════════════
             // UI — RESOURCE INPUTS
@@ -2023,11 +2092,13 @@
             // ═══════════════════════════════════════════════════════════════
             let calcTimeout = null;
 
-            function stepMirror(delta, inputId) {
+            function stepMirror(delta, inputId, step) {
                 const el = document.getElementById(inputId);
                 if (!el) return;
                 let v = Number(el.value) || 0;
-                v = Math.max(0, v + delta);
+                const s = step || 1;
+                const min = (el.min !== "" ? Number(el.min) : 0);
+                v = Math.max(min, +(v + delta * s).toFixed(6));
                 el.value = v;
                 calculate();
             }
@@ -2062,10 +2133,10 @@
             }
 
             function clearAll() {
-                MIRROR_ORBITS.forEach((_, i) => {
-                    const el = document.getElementById(`mirror-${i}`);
-                    if (el) el.value = 0;
-                });
+                const mEl = document.getElementById("mirror-count");
+                if (mEl) mEl.value = 0;
+                const aEl = document.getElementById("mirror-area");
+                if (aEl) aEl.value = 40;
                 const shade = document.getElementById("shade-count");
                 if (shade) shade.value = 0;
                 RESOURCES.forEach((r) => {
@@ -2090,13 +2161,10 @@
                 const planet = getSelectedPlanet();
                 if (!planet) return;
 
-                const mirrorCounts = MIRROR_ORBITS.map((_, i) => {
-                    return Math.max(
-                        0,
-                        Number(document.getElementById(`mirror-${i}`).value) ||
-                            0,
-                    );
-                });
+                const mirrorCount = Math.max(
+                    0,
+                    Number(document.getElementById("mirror-count").value) || 0,
+                );
                 const shadeCount = Math.max(
                     0,
                     Number(document.getElementById("shade-count").value) || 0,
@@ -2121,7 +2189,7 @@
 
                 const result = startLiveSim(
                     planet,
-                    mirrorCounts,
+                    mirrorCount,
                     shadeCount,
                     resourceKt,
                     getEffectiveDistanceAU(),
@@ -2168,8 +2236,8 @@
         <span class="cold">▼ ${fmtTemp(r.tMin)}</span>
         <span class="hot">▲ ${fmtTemp(r.tMax)}</span>
       </div>
-      <div class="rc-sub">Swing ± ${r.swings.toFixed(1)} K &nbsp;|&nbsp; T<sub>eq</sub> ${fmtTemp(r.T_eq)}</div>
-      <div class="rc-sub" style="font-size:0.7em;color:var(--text-dim);">flux &times;${r.swingFluxFactor.toFixed(3)} &nbsp; HC_damp &times;${r.swingHcDamping.toFixed(3)} &nbsp; atm_trans &times;${r.swingAtmTransport.toFixed(3)}</div>
+      <div class="rc-sub">Swing ± ${r.swings.toFixed(1)} K &nbsp;|&nbsp; T<sub>atm</sub> ${fmtTemp(r.origTatm + C.MIN_KELWIN)} &nbsp;|&nbsp; T<sub>eq</sub> ${fmtTemp(r.T_eq)}</div>
+      <div class="rc-sub" style="font-size:0.7em;color:var(--text-dim);">hot +${r.swingHot.toFixed(1)}K &nbsp; cold −${r.swingCold.toFixed(1)}K &nbsp;|&nbsp; f_rot ${r.fRot.toFixed(3)} &nbsp; f_trans ${r.fTransport.toFixed(3)} &nbsp; contrast ${r.contrast.toFixed(3)} &nbsp; τ_rad ${r.tauRadDays.toFixed(2)}d</div>
     </div>
     <div class="result-card ${pressClass(r.pressure)}">
       <div class="rc-label">Pressure</div>
@@ -2305,35 +2373,35 @@
                 if (_loading) return;
                 try {
                     const sel = document.getElementById("planet-select");
-                    if (sel) localStorage.setItem(LS + "planet", sel.value);
+                    if (sel) sessionStorage.setItem(LS + "planet", sel.value);
                     const orbitSel = document.getElementById("orbit-select");
                     if (orbitSel)
-                        localStorage.setItem(LS + "orbit", orbitSel.value);
-                    MIRROR_ORBITS.forEach((_, i) => {
-                        const el = document.getElementById(`mirror-${i}`);
-                        if (el) localStorage.setItem(LS + `m${i}`, el.value);
-                    });
+                        sessionStorage.setItem(LS + "orbit", orbitSel.value);
+                    const mEl = document.getElementById("mirror-count");
+                    if (mEl) sessionStorage.setItem(LS + "mcount", mEl.value);
+                    const aEl = document.getElementById("mirror-area");
+                    if (aEl) sessionStorage.setItem(LS + "marea", aEl.value);
                     const shade = document.getElementById("shade-count");
-                    if (shade) localStorage.setItem(LS + "shade", shade.value);
+                    if (shade) sessionStorage.setItem(LS + "shade", shade.value);
                     RESOURCES.forEach((r) => {
                         const el = document.getElementById(`res-${r.id}`);
                         const gel = document.getElementById(`gas-${r.id}`);
                         const lel = document.getElementById(`liq-${r.id}`);
-                        if (el) localStorage.setItem(LS + r.id, el.value);
-                        if (gel) localStorage.setItem(LS + "g_" + r.id, gel.value);
-                        if (lel) localStorage.setItem(LS + "l_" + r.id, lel.value);
+                        if (el) sessionStorage.setItem(LS + r.id, el.value);
+                        if (gel) sessionStorage.setItem(LS + "g_" + r.id, gel.value);
+                        if (lel) sessionStorage.setItem(LS + "l_" + r.id, lel.value);
                     });
                 } catch (e) {}
             }
             function loadState() {
                 _loading = true;
                 try {
-                    const pid = localStorage.getItem(LS + "planet");
+                    const pid = sessionStorage.getItem(LS + "planet");
                     const sel = document.getElementById("planet-select");
                     if (pid && sel && sel.querySelector(`option[value="${pid}"]`)) {
                         sel.value = pid;
                         updatePlanetStats();
-                        const ov = localStorage.getItem(LS + "orbit");
+                        const ov = sessionStorage.getItem(LS + "orbit");
                         if (ov) {
                             const orbitSel = document.getElementById("orbit-select");
                             if (orbitSel) {
@@ -2342,22 +2410,23 @@
                             }
                         }
                     }
-                    MIRROR_ORBITS.forEach((_, i) => {
-                        const v = localStorage.getItem(LS + `m${i}`);
-                        const el = document.getElementById(`mirror-${i}`);
-                        if (v !== null && el) el.value = v;
-                    });
-                    const sv = localStorage.getItem(LS + "shade");
+                    const mv = sessionStorage.getItem(LS + "mcount");
+                    const mEl = document.getElementById("mirror-count");
+                    if (mv !== null && mEl) mEl.value = mv;
+                    const av = sessionStorage.getItem(LS + "marea");
+                    const aEl = document.getElementById("mirror-area");
+                    if (av !== null && aEl) aEl.value = av;
+                    const sv = sessionStorage.getItem(LS + "shade");
                     const shEl = document.getElementById("shade-count");
                     if (sv !== null && shEl) shEl.value = sv;
                     RESOURCES.forEach((r) => {
-                        const v = localStorage.getItem(LS + r.id);
+                        const v = sessionStorage.getItem(LS + r.id);
                         const el = document.getElementById(`res-${r.id}`);
                         if (v !== null && el) el.value = v;
-                        const gv = localStorage.getItem(LS + "g_" + r.id);
+                        const gv = sessionStorage.getItem(LS + "g_" + r.id);
                         const gel = document.getElementById(`gas-${r.id}`);
                         if (gv !== null && gel) gel.value = gv;
-                        const lv = localStorage.getItem(LS + "l_" + r.id);
+                        const lv = sessionStorage.getItem(LS + "l_" + r.id);
                         const lel = document.getElementById(`liq-${r.id}`);
                         if (lv !== null && lel) lel.value = lv;
                     });
