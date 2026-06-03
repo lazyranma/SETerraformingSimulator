@@ -477,6 +477,11 @@
                 color: var(--text-dim);
                 font-size: 11px;
             }
+            .phase-table .res-info {
+                font-size: 10px;
+                color: var(--text-dim);
+                white-space: nowrap;
+            }
             .phase-table .val-gas {
                 color: var(--gas-color);
             }
@@ -545,6 +550,46 @@
                 .inputs-panel {
                     border-right: none;
                     border-bottom: 1px solid var(--border);
+                }
+            }
+
+            /* ── Phone screens ── */
+            @media (max-width: 600px) {
+                .phase-section {
+                    overflow-x: auto;
+                }
+                .phase-table .res-info {
+                    white-space: normal;
+                }
+                .phase-table th {
+                    padding: 4px 6px;
+                    font-size: 9px;
+                    letter-spacing: 0.3px;
+                }
+                .phase-table td {
+                    padding: 4px 6px;
+                    font-size: 11px;
+                }
+                .phase-table .res-total {
+                    font-size: 10px;
+                }
+                .phase-bar {
+                    min-width: 50px;
+                    height: 5px;
+                }
+                .result-card {
+                    padding: 10px 12px;
+                }
+                .result-card .rc-value {
+                    font-size: 18px;
+                }
+                .phase-section h3 {
+                    padding: 8px 10px 6px;
+                }
+                .sim-info {
+                    gap: 8px;
+                    padding: 6px 10px;
+                    font-size: 10px;
                 }
             }
 
@@ -2313,7 +2358,7 @@
                         tableRows += `
       <tr>
         <td>
-          <div style="font-size:10px;color:var(--text-dim);white-space:nowrap;">
+          <div class="res-info">
             <img src="${ICON_DATA[res.id]}" style="width:20px;height:20px;vertical-align:middle;object-fit:contain;" alt="${res.name}" title="${res.name}"> ${fmtKt(totalKt)} total &nbsp;|&nbsp; P<sub>vap</sub>=${psat} &nbsp;|&nbsp; T<sub>boil</sub>=${tboil}
           </div>
           <div class="phase-bar" style="margin-top:4px;">
