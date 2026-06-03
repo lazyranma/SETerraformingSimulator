@@ -733,41 +733,41 @@
             // tBoil/tMelt in Kelvin, pTriple in atm, hvap in J/mol
             // ═══════════════════════════════════════════════════════════════
             // ═══════════════════════════════════════════════════════════════
-            // DEFAULT DEPOSITS (extracted from NEW2020 save, excluding underground)
-            // Values in kilotonnes (kt). Combine multiple states of same resource.
+            // DEFAULT DEPOSITS
+            // Values in kilotonnes (kt). Multiple deposits of the same type are summed.
             // ═══════════════════════════════════════════════════════════════
             const SAVE_DEPOSITS = {
-                8: { nitrogen:{total:300.0,gas:107.2,solid:192.8}, silicon:{total:710.0,solid:710.0} },
-                10: { silicon:{total:500.0,solid:500.0,underground:7000.0} },
-                24: { nitrogen:{total:2519.6,gas:2519.6}, co2:{total:81072.0,gas:81072.0}, noblegas:{total:214.4,gas:214.4}, silicon:{total:500.0,solid:500.0,underground:13000.0} },
-                56: { nitrogen:{total:627553.0,gas:627553.0}, water:{total:205644.8,gas:186949.8,liquid:18695.0}, he3:{total:1027553.0,gas:1027553.0}, hydrogen:{total:73152375.8,gas:73152375.8} },
-                59: { nitrogen:{total:19.0,gas:19.0}, oxygen:{total:1.5,gas:1.5,underground:500.0}, co2:{total:964.7,gas:964.7}, water:{total:69.3,gas:0.7,solid:68.6,underground:2002.8}, metal:{total:20.0,solid:20.0,underground:20200.0}, silicon:{total:40000.0,solid:40000.0} },
-                66: { nitrogen:{total:8374.0,gas:8374.0}, oxygen:{total:2260.0,gas:2260.0}, co2:{total:4.4,gas:4.4}, noblegas:{total:100.0,gas:100.0}, water:{total:15983.2,gas:300.3,liquid:15682.9,underground:308.8}, silicon:{total:7600.0,solid:7600.0,underground:80600.0} },
-                68: { nitrogen:{total:40739.8,gas:40739.8}, noblegas:{total:16739.8,gas:16739.8}, water:{total:0.2,gas:0.2,liquid:0.02}, he3:{total:3700739.8,gas:3700739.8}, hydrogen:{total:15817.9,gas:15817.9} },
-                73: { nitrogen:{total:509131.3,gas:509131.3}, noblegas:{total:40281.0,gas:40281.0}, he3:{total:809131.3,gas:809131.3}, hydrogen:{total:38790565.9,gas:38790565.9} },
-                74: { nitrogen:{total:33626.6,gas:33626.6}, noblegas:{total:33626.6,gas:33626.6}, water:{total:0.2,gas:0.2,liquid:0.02}, he3:{total:2733626.6,gas:2733626.6}, hydrogen:{total:15458068.5,gas:15458068.5} },
-                86: { water:{total:5485.9,gas:0.2,solid:5485.6,underground:1859.4}, silicon:{total:850.0,solid:850.0} },
-                87: { metal:{total:5.0,solid:5.0}, silicon:{total:6000.0,solid:6000.0,underground:20000.0} },
-                91: { metal:{total:5665.0,solid:5665.0}, uran:{total:2240.0,solid:2240.0} },
-                92: { water:{total:29622.3,solid:29622.3} },
-                93: { water:{total:38061.4,solid:38061.4} },
-                94: { water:{total:15618.3,solid:15618.3,underground:45618.3} },
-                95: { water:{total:1400.0,solid:1400.0}, uran:{total:30.0,solid:30.0} },
-                97: { water:{total:150.0,solid:150.0,underground:12500.0}, silicon:{total:900.0,solid:900.0} },
-                98: { nitrogen:{total:10000.0,gas:10000.0}, water:{total:8581.7,solid:8581.7}, fuel:{total:4225.0,gas:4225.0} },
-                99: { water:{total:4.6,solid:4.6,underground:8230.0}, silicon:{total:100.0,solid:100.0,underground:3000.0} },
-                100: { water:{total:40.0,solid:40.0,underground:6000.0} },
-                101: { water:{total:55.7,solid:55.7,underground:2100.0}, silicon:{total:30.0,solid:30.0,underground:2200.0} },
-                102: { water:{total:600.0,solid:600.0,underground:1400.0} },
-                103: { water:{total:510.0,solid:510.0,underground:2000.0} },
-                106: { water:{total:640.0,solid:640.0}, silicon:{total:4400.0,solid:4400.0} },
-                107: { water:{total:230.0,solid:230.0,underground:3000.0}, silicon:{total:1010.0,solid:1010.0,underground:10000.0} },
-                108: { water:{total:6200.0,solid:6200.0} },
-                109: { metal:{total:700.0,solid:700.0,underground:8000.0} },
-                113: { nitrogen:{total:767.5,solid:767.5}, water:{total:1712.2,solid:1712.2,underground:15000.0}, silicon:{total:3700.0,solid:3700.0} },
-                115: { water:{total:1800.0,solid:1800.0} },
-                116: { water:{total:200.0,solid:200.0,underground:2000.0} },
-                229: { water:{total:12.0,solid:12.0,underground:11000.0} },
+                8: { nitrogen:{gas:300.0}, silicon:{solid:710.0} },
+                10: { silicon:{solid:500.0} },
+                24: { co2:{gas:81072.0}, nitrogen:{gas:2519.6}, noblegas:{gas:214.4}, silicon:{solid:500.0} },
+                56: { he3:{gas:1027553.0}, hydrogen:{gas:73152375.8}, nitrogen:{gas:627553.0}, water:{gas:186949.8} },
+                59: { co2:{gas:964.7}, metal:{solid:20.0}, nitrogen:{gas:19.0}, oxygen:{gas:1.5}, silicon:{solid:40000.0}, water:{gas:0.3,solid:69.0} },
+                66: { co2:{gas:4.4}, nitrogen:{gas:8374.0}, noblegas:{gas:100.0}, oxygen:{gas:2260.0}, silicon:{solid:7600.0}, water:{gas:236.7,liquid:15079.8,solid:636.7} },
+                68: { he3:{gas:3700739.8}, hydrogen:{gas:15817.9}, nitrogen:{gas:40739.8}, noblegas:{gas:16739.8}, water:{gas:0.2} },
+                73: { he3:{solid:809131.3}, hydrogen:{gas:38790565.9}, nitrogen:{gas:509131.3}, noblegas:{gas:40281.0} },
+                74: { he3:{gas:2733626.6}, hydrogen:{gas:15458068.5}, nitrogen:{gas:33626.6}, noblegas:{gas:33626.6}, water:{gas:0.2} },
+                86: { silicon:{solid:850.0}, water:{solid:5485.8} },
+                87: { metal:{solid:5.0}, silicon:{solid:6000.0} },
+                91: { metal:{solid:5665.0}, uran:{solid:2240.0} },
+                92: { water:{solid:29622.3} },
+                93: { water:{solid:38061.4} },
+                94: { water:{solid:15618.3} },
+                95: { uran:{solid:30.0}, water:{solid:1400.0} },
+                97: { silicon:{solid:900.0}, water:{solid:150.0} },
+                98: { fuel:{gas:4225.0}, nitrogen:{gas:10000.0}, water:{solid:8581.7} },
+                99: { silicon:{solid:100.0}, water:{solid:4.6} },
+                100: { water:{solid:40.0} },
+                101: { silicon:{solid:30.0}, water:{solid:55.7} },
+                102: { water:{solid:600.0} },
+                103: { water:{solid:510.0} },
+                106: { silicon:{solid:4400.0}, water:{solid:640.0} },
+                107: { silicon:{solid:1010.0}, water:{solid:230.0} },
+                108: { water:{solid:6200.0} },
+                109: { metal:{solid:700.0} },
+                113: { nitrogen:{gas:767.5}, silicon:{solid:3700.0}, water:{solid:1712.2} },
+                115: { water:{solid:1800.0} },
+                116: { water:{solid:200.0} },
+                229: { water:{solid:12.0} },
             };
 
             const ICON_DATA = {
@@ -1988,7 +1988,7 @@
                 if (!p) return;
                 const deps = SAVE_DEPOSITS[p.id];
                 if (!deps) {
-                    alert("No deposit data for " + p.name + " in NEW2020 save.");
+                    alert("No deposit data for " + p.name + ".");
                     return;
                 }
                 // Clear first
@@ -2000,14 +2000,14 @@
                     if (gel) gel.value = 0;
                     if (lel) lel.value = 0;
                 });
-                // Fill from save data (solid = total - gas - liquid)
+                // Fill from save data
                 for (const [rid, info] of Object.entries(deps)) {
                     const gel = document.getElementById("gas-" + rid);
                     if (gel) gel.value = info.gas || 0;
                     const lel = document.getElementById("liq-" + rid);
                     if (lel) lel.value = info.liquid || 0;
                     const el = document.getElementById("res-" + rid);
-                    if (el) el.value = Math.max(0, (info.total || 0) - (info.gas || 0) - (info.liquid || 0));
+                    if (el) el.value = info.solid || 0;
                 }
                 calculate();
             }
