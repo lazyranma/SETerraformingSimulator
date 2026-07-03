@@ -4,7 +4,7 @@ HTML terraforming simulator. Matches in-game model as closely as possible.
 
 ## How to use
 
-Select a planet, adjust mirrors/shades/resources. The simulator will calculate the planet's atmosphere and phase transitions over time.
+Select a planet, then adjust the mirrors, shades, and resources (gas, liquid, or solid; underground deposits do not affect the calculations). The simulator will calculate the planet's atmosphere and phase transitions over time.
 
 ## Simulation phases
 
